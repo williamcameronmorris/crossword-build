@@ -1,0 +1,1 @@
+- [Crossword puzzle integrity](crossword-puzzle-integrity.md) — validate every vertical run as a real answer with its own clue.

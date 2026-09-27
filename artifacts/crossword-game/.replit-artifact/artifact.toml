@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "5x5 Crossword Game"
+description = "A friendly, mobile-first 5x5 crossword game inspired by Apple Games, with tap-to-select clues, keyboard entry, validation, hints, and a completion celebration."
+version = "1.0.0"
+id = "artifacts/crossword-game"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24367
+
+[services.development]
+run = "pnpm --filter @workspace/crossword-game run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/crossword-game", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/crossword-game/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24367"
+BASE_PATH = "/"
