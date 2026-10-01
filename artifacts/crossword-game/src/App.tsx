@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Delete, Flame, Grid, HelpCircle, Lightbulb, Pause, Play, RotateCcw, Share2, Shuffle, Sparkles, Trophy, Volume2, VolumeX, X, Zap } from 'lucide-react';
+import { ArrowDown, ArrowRight, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Delete, Flame, Grid, HelpCircle, Lightbulb, List, Pause, Play, RotateCcw, Share2, Shuffle, Sparkles, Trophy, Volume2, VolumeX, X, Zap } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -436,7 +436,6 @@ function fireConfetti() {
 }
 
 function Home() {
-  const captureRef = useRef<HTMLInputElement>(null);
   const [puzzleIndex, setPuzzleIndex] = useState(() => {
     const saved = localStorage.getItem('clue_co_puzzle_idx');
     return saved ? parseInt(saved, 10) : 0;
@@ -448,9 +447,11 @@ function Home() {
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [completed, setCompleted] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showAllCluesModal, setShowAllCluesModal] = useState(false);
+  const [cluesTab, setCluesTab] = useState<Direction>('across');
   const [showKeyboard, setShowKeyboard] = useState(() => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth <= 640;
+      return window.innerWidth <= 768;
     }
     return false;
   });
@@ -565,10 +566,9 @@ function Home() {
     [allEntries, direction],
   );
 
-  const focusCapture = useCallback(() => {
-    if (!isPaused && !completed) {
-      captureRef.current?.focus();
-      if (!timerRunning) setTimerRunning(true);
+  const startTimer = useCallback(() => {
+    if (!isPaused && !completed && !timerRunning) {
+      setTimerRunning(true);
     }
   }, [isPaused, completed, timerRunning]);
 
@@ -582,9 +582,9 @@ function Home() {
         setSelected(nextEntries[0].cells[0]);
       }
       playClueSwitch();
-      focusCapture();
+      startTimer();
     },
-    [direction, acrossEntries, downEntries, selected, focusCapture],
+    [direction, acrossEntries, downEntries, selected, startTimer],
   );
 
   const selectCell = useCallback(
@@ -599,9 +599,9 @@ function Home() {
           setDirection(cellEntry(cell, otherDirection) ? otherDirection : 'across');
         }
       }
-      focusCapture();
+      startTimer();
     },
-    [selected, isBlock, switchDirection, cellEntry, direction, focusCapture],
+    [selected, isBlock, switchDirection, cellEntry, direction, startTimer],
   );
 
   const selectEntry = useCallback(
@@ -609,9 +609,9 @@ function Home() {
       setDirection(entry.direction);
       setSelected(entry.cells[0]);
       playClueSwitch();
-      focusCapture();
+      startTimer();
     },
-    [focusCapture],
+    [startTimer],
   );
 
   // Jump to next or previous clue entry
@@ -633,9 +633,9 @@ function Home() {
         setSelected(activeList[nextIndex].cells[0]);
       }
       playClueSwitch();
-      focusCapture();
+      startTimer();
     },
-    [direction, acrossEntries, downEntries, selectedEntry, focusCapture],
+    [direction, acrossEntries, downEntries, selectedEntry, startTimer],
   );
 
   const moveBy = useCallback(
@@ -778,9 +778,9 @@ function Home() {
         localStorage.setItem('clue_co_puzzle_idx', String(nextIdx));
       }
       setTimerRunning(true);
-      focusCapture();
+      startTimer();
     },
-    [puzzleIndex, focusCapture],
+    [puzzleIndex, startTimer],
   );
 
   // Physical Keyboard Listener
@@ -860,21 +860,7 @@ function Home() {
   };
 
   return (
-    <main className="game-shell" onPointerDown={focusCapture}>
-      {/* Native Keyboard Capture Input */}
-      <input
-        ref={captureRef}
-        className="key-capture"
-        aria-label="Type your crossword answer"
-        data-testid="input-answer"
-        autoFocus
-        inputMode="text"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        autoComplete="off"
-        spellCheck="false"
-      />
-
+    <main className="game-shell">
       {/* Top Bar with Brand, Theme Selector, Live Timer, Streak, and Help */}
       <div className="topbar">
         <div className="brand-lockup" data-testid="text-brand">
@@ -977,7 +963,31 @@ function Home() {
           >
             <HelpCircle size={19} strokeWidth={2.1} />
           </button>
+
+          <button
+            type="button"
+            className="icon-button mobile-clues-header-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAllCluesModal(true);
+            }}
+            title="View All Clues"
+            aria-label="View all clues"
+          >
+            <List size={18} />
+          </button>
         </div>
+      </div>
+
+      {/* Compact Theme Bar for Mobile Screens */}
+      <div className="mobile-theme-bar">
+        <span className="mobile-theme-title">
+          <span className="mobile-theme-icon">{currentPuzzle.themeIcon}</span>
+          <strong>{currentPuzzle.theme}</strong> • {currentPuzzle.title}
+        </span>
+        <span className="mobile-progress-badge">
+          {Object.keys(letters).length}/{allPlayableCells.length}
+        </span>
       </div>
 
       <section className="intro-row">
@@ -1044,6 +1054,19 @@ function Home() {
             >
               <ChevronRight size={18} />
             </button>
+            <button
+              type="button"
+              className="clue-list-toggle-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAllCluesModal(true);
+              }}
+              title="View All Clues"
+              aria-label="View all clues"
+            >
+              <List size={14} />
+              <span>List</span>
+            </button>
           </div>
 
           <div className="board-container-relative">
@@ -1053,7 +1076,7 @@ function Home() {
                 className="pause-overlay"
                 onClick={() => {
                   setIsPaused(false);
-                  focusCapture();
+                  startTimer();
                 }}
               >
                 <div className="pause-modal">
@@ -1104,6 +1127,27 @@ function Home() {
               }}
             >
               {showKeyboard ? 'Hide Keypad' : 'Show Keypad'}
+            </button>
+          </div>
+
+          {/* Mobile Quick Controls Row */}
+          <div className="mobile-controls-row">
+            <button type="button" className="mob-action-btn" onClick={checkPuzzle} title="Check Answers">
+              <Check size={13} /> Check
+            </button>
+            <button type="button" className="mob-action-btn" onClick={revealCurrent} title="Reveal Hint">
+              <Lightbulb size={13} /> Hint
+            </button>
+            <button type="button" className="mob-action-btn" onClick={() => resetPuzzle()} title="Reset Board">
+              <RotateCcw size={13} /> Reset
+            </button>
+            <button
+              type="button"
+              className="mob-action-btn mob-clues-btn"
+              onClick={() => setShowAllCluesModal(true)}
+              title="View All Clues"
+            >
+              <List size={13} /> Clues
             </button>
           </div>
 
@@ -1361,6 +1405,74 @@ function Home() {
                       <span>5×5 Mini</span>
                       <span className="play-arrow">Play →</span>
                     </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All Clues Slide-Up Bottom Sheet */}
+      {showAllCluesModal && (
+        <div
+          className="clues-sheet-backdrop"
+          onClick={() => setShowAllCluesModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="All Clues"
+        >
+          <div className="clues-sheet-card" onClick={(e) => e.stopPropagation()}>
+            <div className="clues-sheet-header">
+              <div>
+                <h3>All Clues</h3>
+                <p>{currentPuzzle.themeIcon} {currentPuzzle.theme} • {currentPuzzle.title}</p>
+              </div>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setShowAllCluesModal(false)}
+                aria-label="Close clues"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="clues-sheet-tabs">
+              <button
+                type="button"
+                className={cluesTab === 'across' ? 'active' : ''}
+                onClick={() => setCluesTab('across')}
+              >
+                <ArrowRight size={14} /> Across ({acrossEntries.length})
+              </button>
+              <button
+                type="button"
+                className={cluesTab === 'down' ? 'active' : ''}
+                onClick={() => setCluesTab('down')}
+              >
+                <ArrowDown size={14} /> Down ({downEntries.length})
+              </button>
+            </div>
+
+            <div className="clues-sheet-list">
+              {(cluesTab === 'across' ? acrossEntries : downEntries).map((entry) => {
+                const isSelected = selectedEntry.number === entry.number && selectedEntry.direction === entry.direction;
+                const isFilled = entry.cells.every((c) => !!letters[keyFor(c.row, c.col)]);
+                return (
+                  <button
+                    type="button"
+                    key={`${entry.direction}-${entry.number}`}
+                    className={`clues-sheet-row ${isSelected ? 'active' : ''}`}
+                    onClick={() => {
+                      selectEntry(entry);
+                      setShowAllCluesModal(false);
+                    }}
+                  >
+                    <strong className="clue-num">{entry.number}</strong>
+                    <span className="clue-text">{entry.clue}</span>
+                    {isFilled && <span className="clue-done-badge">✓</span>}
+                    <ChevronRight size={16} className="clue-sheet-arrow" />
                   </button>
                 );
               })}
