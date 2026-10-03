@@ -159,3 +159,39 @@ export function playVictoryFanfare(): void {
     osc.stop(startTime + decayDuration);
   });
 }
+
+// Subtle, tactile incorrect buzzer (warm double-pulse low tone)
+export function playIncorrectBuzzer(): void {
+  if (!getSoundEnabled()) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const pulses = [0, 0.11]; // Two gentle, rapid pulses
+
+  pulses.forEach((offset) => {
+    const startTime = now + offset;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, startTime);
+    osc.frequency.exponentialRampToValueAtTime(105, startTime + 0.08);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(500, startTime);
+
+    gain.gain.setValueAtTime(0.001, startTime);
+    gain.gain.linearRampToValueAtTime(0.2, startTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.085);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + 0.085);
+  });
+}
+

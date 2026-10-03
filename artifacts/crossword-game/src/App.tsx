@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
-import { getSoundEnabled, playBackspace, playClueSwitch, playKeyClick, playVictoryFanfare, setSoundEnabled } from './audio';
+import { getSoundEnabled, playBackspace, playClueSwitch, playIncorrectBuzzer, playKeyClick, playVictoryFanfare, setSoundEnabled } from './audio';
 
 type Direction = 'across' | 'down';
 type Cell = { row: number; col: number };
@@ -466,6 +466,10 @@ function Home() {
   const [streak, setStreak] = useState(() => {
     return parseInt(localStorage.getItem('clue_co_streak') || '1', 10);
   });
+  const [boardShaking, setBoardShaking] = useState(false);
+  const [shakingCellKey, setShakingCellKey] = useState<string | null>(null);
+  const lastEnteredKeyRef = useRef<string | null>(null);
+  const prevFilledCountRef = useRef<number>(0);
 
   const toggleSound = () => {
     const next = !soundOn;
@@ -514,6 +518,8 @@ function Home() {
     setTimerRunning(false);
     setIsPaused(false);
     setHintsUsed(0);
+    prevFilledCountRef.current = 0;
+    lastEnteredKeyRef.current = null;
 
     // Load personal best
     const savedBest = localStorage.getItem(`clue_co_best_${currentPuzzle.id}`);
@@ -669,6 +675,7 @@ function Home() {
       if (!timerRunning) setTimerRunning(true);
 
       const cellKey = keyFor(selected.row, selected.col);
+      lastEnteredKeyRef.current = cellKey;
       setLetters((current) => ({ ...current, [cellKey]: letter }));
       setChecked((current) => {
         const next = new Set(current);
@@ -939,7 +946,11 @@ function Home() {
   useEffect(() => {
     if (completed) return;
     const filledCount = allPlayableCells.filter((cell) => !!letters[keyFor(cell.row, cell.col)]).length;
-    if (filledCount === allPlayableCells.length) {
+    const isNowFull = filledCount === allPlayableCells.length;
+    const wasFull = prevFilledCountRef.current === allPlayableCells.length;
+    prevFilledCountRef.current = filledCount;
+
+    if (isNowFull) {
       const solved = allPlayableCells.every((cell) => letters[keyFor(cell.row, cell.col)] === solution[cell.row][cell.col]);
       if (solved) {
         setCompleted(true);
@@ -960,6 +971,17 @@ function Home() {
         } else {
           setIsNewRecord(false);
         }
+      } else if (!wasFull) {
+        // Trigger tactile buzz & shake on entering the final letter when incorrect
+        playIncorrectBuzzer();
+        setBoardShaking(true);
+        if (lastEnteredKeyRef.current) {
+          setShakingCellKey(lastEnteredKeyRef.current);
+        }
+        setTimeout(() => {
+          setBoardShaking(false);
+          setShakingCellKey(null);
+        }, 500);
       }
     }
   }, [letters, allPlayableCells, solution, completed, streak, timerSeconds, currentPuzzle.id]);
@@ -1225,7 +1247,7 @@ function Home() {
 
           {/* 5x5 Crossword Board */}
           <div
-            className={`apple-board ${isPaused ? 'is-paused' : ''}`}
+            className={`apple-board ${isPaused ? 'is-paused' : ''} ${boardShaking ? 'is-shaking' : ''}`}
             role="grid"
             aria-label="Crossword Board"
             data-testid="crossword-board"
@@ -1241,6 +1263,7 @@ function Home() {
                 const inWord = selectedEntry.cells.some((entryCell) => sameCell(entryCell, cell));
                 const isWrong = checked.has(key);
                 const isRev = revealed.has(key);
+                const isShakingCell = shakingCellKey === key;
 
                 return (
                   <button
@@ -1249,7 +1272,9 @@ function Home() {
                     role="gridcell"
                     className={`apple-cell ${isSelected ? 'is-selected' : ''} ${
                       inWord && !isSelected ? 'in-word' : ''
-                    } ${isWrong ? 'is-wrong' : ''} ${isRev ? 'is-revealed' : ''}`}
+                    } ${isWrong ? 'is-wrong' : ''} ${isRev ? 'is-revealed' : ''} ${
+                      isShakingCell ? 'is-incorrect-pulse' : ''
+                    }`}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       selectCell(cell);

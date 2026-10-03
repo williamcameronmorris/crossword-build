@@ -272,6 +272,16 @@ button {
   opacity: 0.3;
 }
 
+.apple-board.is-shaking {
+  animation: boardShake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes boardShake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-5px); }
+  30%, 60%, 90% { transform: translateX(5px); }
+}
+
 /* Board Cells */
 .apple-cell {
   position: relative;
@@ -319,6 +329,13 @@ button {
 
 .apple-cell.is-wrong {
   animation: cellShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  background: #FDE8E8 !important;
+  border-color: #E27B7B !important;
+  color: #A32020 !important;
+}
+
+.apple-cell.is-incorrect-pulse {
+  animation: cellShake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   background: #FDE8E8 !important;
   border-color: #E27B7B !important;
   color: #A32020 !important;
