@@ -1,4 +1,11 @@
 /* Crossword Theme - Aesthetic Light Cream & Hunter Green */
+:root {
+  /* Emil Kowalski's signature motion curves */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -90,7 +97,7 @@ button {
   align-items: center;
   justify-content: center;
   box-shadow: 0 1px 3px rgba(40, 30, 20, 0.05);
-  transition: transform 0.12s ease, background-color 0.12s ease;
+  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out);
 }
 
 .apple-circle-btn:active {
@@ -114,7 +121,7 @@ button {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
   box-shadow: 0 1px 3px rgba(40, 30, 20, 0.05);
-  transition: transform 0.12s ease, background-color 0.12s ease;
+  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out), border-color 140ms var(--ease-out);
 }
 
 .apple-timer-pill:active {
@@ -152,16 +159,21 @@ button {
   align-items: center;
   justify-content: center;
   color: #6E736E;
-  transition: color 0.12s ease, background-color 0.12s ease;
+  transition: transform 120ms var(--ease-out), color 120ms var(--ease-out), background-color 120ms var(--ease-out);
 }
 
-.apple-pill-btn:active,
+.apple-pill-btn:active {
+  transform: scale(0.94);
+  color: #1C1E1D;
+  background: #EBE5DB;
+}
+
 .apple-pill-btn.is-active {
   color: #1C1E1D;
   background: #EBE5DB;
 }
 
-/* Popover Menus for Check/Reveal and More Options */
+/* Popover Menus: Origin-Aware & Blooming from Trigger */
 .apple-menu-anchor {
   position: relative;
 }
@@ -177,17 +189,18 @@ button {
   box-shadow: 0 12px 32px rgba(40, 30, 20, 0.14), 0 2px 6px rgba(40, 30, 20, 0.06);
   padding: 6px;
   z-index: 100;
-  animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+  animation: popoverFadeIn 160ms var(--ease-out);
 }
 
 @keyframes popoverFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.97);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -210,11 +223,12 @@ button {
   font-weight: 500;
   color: #1C1E1D;
   text-align: left;
-  transition: background-color 0.1s ease;
+  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
 }
 
 .apple-popover-item:active {
   background-color: #F2EDE4;
+  transform: scale(0.98);
 }
 
 .apple-popover-divider {
@@ -250,7 +264,7 @@ button {
   grid-template-columns: repeat(5, 1fr);
   gap: 5px;
   background: #F7F4EE;
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  transition: opacity 200ms var(--ease-out), filter 200ms var(--ease-out);
 }
 
 .apple-board.is-paused {
@@ -271,7 +285,7 @@ button {
   align-items: center;
   justify-content: center;
   color: #1C1E1D;
-  transition: background-color 0.12s ease, transform 0.08s ease;
+  transition: background-color 100ms var(--ease-out), transform 80ms var(--ease-out);
   touch-action: manipulation;
 }
 
@@ -279,6 +293,7 @@ button {
   transform: scale(0.96);
 }
 
+/* Debossed Toasted Cream Block Cells */
 .apple-cell-block {
   background: #E4DDD2 !important;
   border: 1px solid #D6CEC1 !important;
@@ -370,6 +385,11 @@ button {
   box-shadow: 0 16px 40px rgba(40, 30, 20, 0.14);
   text-align: center;
   color: #1C1E1D;
+  transition: transform 140ms var(--ease-out);
+}
+
+.apple-pause-card:active {
+  transform: scale(0.97);
 }
 
 .apple-pause-card h3 {
@@ -411,11 +431,12 @@ button {
   padding: 4px;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: color 0.12s ease;
+  transition: transform 120ms var(--ease-out), color 120ms var(--ease-out);
 }
 
 .apple-clue-bar-toggle:active {
   color: #1C1E1D;
+  transform: scale(0.92);
 }
 
 .apple-clue-bar-content {
@@ -475,12 +496,12 @@ button {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  transition: color 0.12s ease, transform 0.1s ease;
+  transition: transform 120ms var(--ease-out), color 120ms var(--ease-out);
 }
 
 .apple-stepper-btn:active {
   color: #1C1E1D;
-  transform: scale(0.9);
+  transform: scale(0.90);
 }
 
 /* 4. Native Keyboard Dock & Clues Deck */
@@ -490,7 +511,7 @@ button {
   width: 100%;
 }
 
-/* Mode: Apple Clues Deck Card (Screenshot 3) */
+/* Mode: Apple Clues Deck Card (Real iOS Drawer Slide) */
 .apple-clues-deck-card {
   flex: 1;
   min-height: 0;
@@ -502,12 +523,18 @@ button {
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(40, 30, 20, 0.08);
-  animation: slideDeckUp 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideDeckUp 220ms var(--ease-drawer);
 }
 
 @keyframes slideDeckUp {
-  from { transform: translateY(12px); opacity: 0.6; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .apple-clues-deck-header {
@@ -529,7 +556,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s ease, background-color 0.1s ease;
+  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
 }
 
 .apple-clues-close-btn:active {
@@ -552,7 +579,11 @@ button {
   font-size: 13px;
   font-weight: 600;
   color: #6E736E;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: transform 120ms var(--ease-out), background-color 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+
+.apple-segment-tab:active {
+  transform: scale(0.95);
 }
 
 .apple-segment-tab.is-active {
@@ -584,11 +615,12 @@ button {
   font-size: 14px;
   text-align: left;
   line-height: 1.35;
-  transition: background-color 0.1s ease;
+  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
 }
 
 .apple-clue-list-row:active {
   background: #F4EFE6;
+  transform: scale(0.985);
 }
 
 .apple-clue-list-row.is-active {
@@ -621,12 +653,18 @@ button {
   align-items: center;
   justify-content: center;
   padding: 18px;
-  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalFadeIn 200ms var(--ease-out);
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .apple-modal-card {
@@ -740,11 +778,11 @@ button {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: transform 0.1s ease, opacity 0.1s ease;
+  transition: transform 140ms var(--ease-out), opacity 140ms var(--ease-out);
 }
 
 .apple-action-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .apple-action-primary {
@@ -772,6 +810,7 @@ button {
   font-weight: 500;
   color: #6E736E;
   text-decoration: underline;
+  transition: color 120ms var(--ease-out);
 }
 
 /* Theme Gallery Modal */
@@ -820,7 +859,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s ease;
+  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
 }
 
 .apple-circle-close-btn:active {
@@ -847,7 +886,7 @@ button {
   gap: 8px;
   text-align: left;
   box-shadow: 0 1px 3px rgba(40, 30, 20, 0.04);
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition: transform 120ms var(--ease-out), border-color 120ms var(--ease-out);
 }
 
 .apple-theme-tile:active {
@@ -857,16 +896,6 @@ button {
 .apple-theme-tile.is-active {
   border-color: #2D6A4F;
   background: #D8EADB;
-}
-
-.apple-theme-tile-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.apple-theme-tile-emoji {
-  font-size: 24px;
 }
 
 .apple-theme-best-chip {
@@ -936,4 +965,39 @@ button {
   font-size: 12px;
   color: #6E736E;
   line-height: 1.35;
+}
+
+/* 6. Desktop Pointer Hover Gating (Prevents sticky mobile tap highlights) */
+@media (hover: hover) and (pointer: fine) {
+  .apple-circle-btn:hover {
+    background: #F4EFE6;
+  }
+  .apple-timer-pill:hover {
+    background: #FAF7F2;
+  }
+  .apple-pill-btn:hover {
+    color: #1C1E1D;
+    background: #F2EDE4;
+  }
+  .apple-clue-bar-toggle:hover {
+    color: #1C1E1D;
+  }
+  .apple-stepper-btn:hover {
+    color: #1C1E1D;
+  }
+  .apple-clue-list-row:hover:not(.is-active) {
+    background: #FAF6EF;
+  }
+  .apple-theme-tile:hover:not(.is-active) {
+    border-color: #CFC7B9;
+  }
+  .apple-action-btn:hover {
+    opacity: 0.95;
+  }
+  .apple-browse-link:hover {
+    color: #1C1E1D;
+  }
+  .apple-circle-close-btn:hover {
+    background: #E5DFC4;
+  }
 }
