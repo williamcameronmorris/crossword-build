@@ -1216,7 +1216,7 @@ function Home() {
               }}
             >
               <div className="apple-pause-card">
-                <Play size={36} fill="#ffffff" />
+                <Play size={36} fill="#2d6a4f" color="#2d6a4f" />
                 <h3>Game Paused</h3>
                 <p>Tap anywhere to continue</p>
               </div>
