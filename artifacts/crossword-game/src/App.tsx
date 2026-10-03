@@ -588,7 +588,6 @@ function Home() {
       }
       playClueSwitch();
       startTimer();
-      inputRef.current?.focus();
     },
     [direction, acrossEntries, downEntries, selected, startTimer],
   );
@@ -596,17 +595,23 @@ function Home() {
   const selectCell = useCallback(
     (cell: Cell) => {
       if (isBlock(cell.row, cell.col)) return;
+
+      const currentEntry = cellEntry(cell, direction);
+      const otherDir = direction === 'across' ? 'down' : 'across';
+      const otherEntry = cellEntry(cell, otherDir);
+
       if (sameCell(selected, cell)) {
-        switchDirection();
+        if (otherEntry) {
+          switchDirection();
+        }
       } else {
         setSelected(cell);
-        if (!cellEntry(cell, direction)) {
-          const otherDirection = direction === 'across' ? 'down' : 'across';
-          setDirection(cellEntry(cell, otherDirection) ? otherDirection : 'across');
+        if (!currentEntry && otherEntry) {
+          setDirection(otherDir);
         }
+        playClueSwitch();
       }
       startTimer();
-      inputRef.current?.focus();
     },
     [selected, isBlock, switchDirection, cellEntry, direction, startTimer],
   );
@@ -617,7 +622,6 @@ function Home() {
       setSelected(entry.cells[0]);
       playClueSwitch();
       startTimer();
-      inputRef.current?.focus();
     },
     [startTimer],
   );
@@ -642,7 +646,6 @@ function Home() {
       }
       playClueSwitch();
       startTimer();
-      inputRef.current?.focus();
     },
     [direction, acrossEntries, downEntries, selectedEntry, startTimer],
   );
@@ -929,45 +932,6 @@ function Home() {
 
   return (
     <main className="apple-game-shell">
-      {/* Invisible accessible input to capture native iOS/Android keyboard */}
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode="text"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        autoComplete="off"
-        spellCheck={false}
-        className="native-keyboard-input"
-        aria-label="Crossword letter input"
-        value={inputValue}
-        onChange={(e) => {
-          const val = e.target.value;
-          if (val) {
-            const char = val.slice(-1);
-            if (/^[a-zA-Z]$/.test(char)) {
-              updateLetter(char);
-            }
-          }
-          setInputValue('');
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Backspace' || e.key === 'Delete') {
-            e.preventDefault();
-            clearCurrent();
-          } else if (e.key === ' ' || e.key === 'Spacebar') {
-            e.preventDefault();
-            switchDirection();
-          } else if (e.key === 'Tab') {
-            e.preventDefault();
-            jumpToEntry(e.shiftKey ? -1 : 1);
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            jumpToEntry(1);
-          }
-        }}
-      />
-
       {/* Apple Top Navigation Bar */}
       <header className="apple-topbar">
         {/* Left: Circle button opening Theme / Puzzle selector */}
@@ -1213,15 +1177,7 @@ function Home() {
                     className={`apple-cell ${isSelected ? 'is-selected' : ''} ${
                       inWord && !isSelected ? 'in-word' : ''
                     } ${isWrong ? 'is-wrong' : ''} ${isRev ? 'is-revealed' : ''}`}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      selectCell(cell);
-                      inputRef.current?.focus();
-                    }}
-                    onClick={() => {
-                      selectCell(cell);
-                      inputRef.current?.focus();
-                    }}
+                    onClick={() => selectCell(cell)}
                     aria-label={`Row ${rowIndex + 1}, column ${colIndex + 1}${letters[key] ? `, ${letters[key]}` : ''}`}
                     data-testid={`cell-${rowIndex}-${colIndex}`}
                   >
@@ -1238,16 +1194,13 @@ function Home() {
       </section>
 
       {/* Floating Active Clue Bar (Directly below board) */}
-      <div className="apple-clue-bar" onClick={() => inputRef.current?.focus()}>
+      <div className="apple-clue-bar">
         <button
           type="button"
           className="apple-clue-bar-toggle"
           onClick={(e) => {
             e.stopPropagation();
             setBottomView((v) => (v === 'clues' ? 'keyboard' : 'clues'));
-            if (bottomView === 'clues') {
-              inputRef.current?.focus();
-            }
           }}
           title={bottomView === 'keyboard' ? 'Show Clues List' : 'Show Keyboard'}
           aria-label={bottomView === 'keyboard' ? 'Show Clues List' : 'Show Keyboard'}
@@ -1257,10 +1210,7 @@ function Home() {
 
         <div
           className="apple-clue-bar-content"
-          onClick={() => {
-            switchDirection();
-            inputRef.current?.focus();
-          }}
+          onClick={() => switchDirection()}
           title="Tap to toggle Across/Down"
           role="button"
           tabIndex={0}
@@ -1279,7 +1229,6 @@ function Home() {
             onClick={(e) => {
               e.stopPropagation();
               jumpToEntry(-1);
-              inputRef.current?.focus();
             }}
             title="Previous Clue"
             aria-label="Previous Clue"
@@ -1292,7 +1241,6 @@ function Home() {
             onClick={(e) => {
               e.stopPropagation();
               jumpToEntry(1);
-              inputRef.current?.focus();
             }}
             title="Next Clue"
             aria-label="Next Clue"
@@ -1302,95 +1250,138 @@ function Home() {
         </div>
       </div>
 
-      {/* Dual-Mode Bottom Deck: Mode A (Native Helper Strip) or Mode B (Clue List) */}
-      <div className={`apple-bottom-deck ${bottomView === 'clues' ? 'deck-clues-view' : 'deck-native-view'}`}>
+      {/* Dual-Mode Bottom Deck: Locked in place, swaps between Keyboard and Clue Card */}
+      <div className="apple-bottom-deck">
         {bottomView === 'keyboard' ? (
-          <div className="native-deck-toolbar" role="toolbar" aria-label="Crossword Actions">
-            <button
-              type="button"
-              className="native-deck-btn"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                jumpToEntry(-1);
-                inputRef.current?.focus();
-              }}
-              title="Previous Clue"
-              aria-label="Previous Clue"
-            >
-              <ChevronLeft size={16} /> <span>Prev</span>
-            </button>
-            <button
-              type="button"
-              className="native-deck-btn native-deck-flip"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                switchDirection();
-                inputRef.current?.focus();
-              }}
-              title="Flip Direction"
-              aria-label="Flip Direction"
-            >
-              <span>{direction.toUpperCase()}</span>
-            </button>
-            <button
-              type="button"
-              className="native-deck-btn"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                jumpToEntry(1);
-                inputRef.current?.focus();
-              }}
-              title="Next Clue"
-              aria-label="Next Clue"
-            >
-              <span>Next</span> <ChevronRight size={16} />
-            </button>
-            <button
-              type="button"
-              className="native-deck-btn native-deck-del"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                clearCurrent();
-                inputRef.current?.focus();
-              }}
-              title="Backspace"
-              aria-label="Backspace"
-            >
-              <Delete size={17} />
-            </button>
-          </div>
-        ) : (
-          <div className="apple-clues-deck">
-            {/* Apple Segmented Control */}
-            <div className="apple-segmented-bar" role="tablist">
+          <div className="apple-keyboard" role="toolbar" aria-label="Keyboard">
+            <div className="apple-kbd-row">
+              {['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'].map((char) => (
+                <button
+                  key={char}
+                  type="button"
+                  className="apple-kbd-key"
+                  onClick={() => updateLetter(char)}
+                >
+                  {char}
+                </button>
+              ))}
+            </div>
+            <div className="apple-kbd-row apple-kbd-row-mid">
+              {['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'].map((char) => (
+                <button
+                  key={char}
+                  type="button"
+                  className="apple-kbd-key"
+                  onClick={() => updateLetter(char)}
+                >
+                  {char}
+                </button>
+              ))}
+            </div>
+            <div className="apple-kbd-row">
               <button
                 type="button"
-                role="tab"
-                aria-selected={cluesTab === 'across'}
-                className={`apple-segment-tab ${cluesTab === 'across' ? 'is-active' : ''}`}
-                onClick={() => {
-                  setCluesTab('across');
-                  switchDirection('across');
-                }}
+                className="apple-kbd-key apple-kbd-fn"
+                onClick={() => jumpToEntry(-1)}
+                title="Previous Clue"
+                aria-label="Previous Clue"
               >
-                Across
+                <ChevronLeft size={18} />
               </button>
+              {['z', 'x', 'c', 'v', 'b', 'n', 'm'].map((char) => (
+                <button
+                  key={char}
+                  type="button"
+                  className="apple-kbd-key"
+                  onClick={() => updateLetter(char)}
+                >
+                  {char}
+                </button>
+              ))}
               <button
                 type="button"
-                role="tab"
-                aria-selected={cluesTab === 'down'}
-                className={`apple-segment-tab ${cluesTab === 'down' ? 'is-active' : ''}`}
-                onClick={() => {
-                  setCluesTab('down');
-                  switchDirection('down');
-                }}
+                className="apple-kbd-key apple-kbd-fn apple-kbd-del"
+                onClick={clearCurrent}
+                title="Backspace"
+                aria-label="Backspace"
               >
-                Down
+                <Delete size={19} />
               </button>
             </div>
+            <div className="apple-kbd-row apple-kbd-row-bottom">
+              <button
+                type="button"
+                className="apple-kbd-key apple-kbd-fn apple-kbd-flip"
+                onClick={switchDirection}
+                title="Flip Direction"
+              >
+                {direction.toUpperCase()}
+              </button>
+              <button
+                type="button"
+                className="apple-kbd-key apple-kbd-space"
+                onClick={() => jumpToEntry(1)}
+                title="Next Clue"
+              >
+                space
+              </button>
+              <button
+                type="button"
+                className="apple-kbd-key apple-kbd-fn apple-kbd-next"
+                onClick={() => jumpToEntry(1)}
+                title="Next Clue"
+                aria-label="Next Clue"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="apple-clues-deck-card">
+            {/* Clues Card Header matching Screenshot 3 */}
+            <div className="apple-clues-deck-header">
+              <button
+                type="button"
+                className="apple-clues-close-btn"
+                onClick={() => setBottomView('keyboard')}
+                title="Close Clues"
+                aria-label="Close Clues"
+              >
+                <X size={18} />
+              </button>
 
-            {/* Apple Clues List Card */}
-            <div className="apple-clues-list-card">
+              <div className="apple-segmented-bar" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={cluesTab === 'across'}
+                  className={`apple-segment-tab ${cluesTab === 'across' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setCluesTab('across');
+                    switchDirection('across');
+                  }}
+                >
+                  Across
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={cluesTab === 'down'}
+                  className={`apple-segment-tab ${cluesTab === 'down' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setCluesTab('down');
+                    switchDirection('down');
+                  }}
+                >
+                  Down
+                </button>
+              </div>
+
+              <div className="apple-header-spacer" />
+            </div>
+
+            {/* Clues List matching Screenshot 3 */}
+            <div className="apple-clues-deck-list">
               {(cluesTab === 'across' ? acrossEntries : downEntries).map((entry) => {
                 const isSelected =
                   selectedEntry.number === entry.number && selectedEntry.direction === entry.direction;
@@ -1402,7 +1393,6 @@ function Home() {
                     onClick={() => {
                       selectEntry(entry);
                       setBottomView('keyboard');
-                      inputRef.current?.focus();
                     }}
                     data-testid={`clue-${entry.direction}-${entry.number}`}
                   >
