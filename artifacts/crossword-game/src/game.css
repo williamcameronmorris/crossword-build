@@ -1,4 +1,4 @@
-/* Apple Crossword Theme - Pure OLED Dark Aesthetic */
+/* Crossword Theme - Pure OLED Dark with Hunter Green & Deep Pine */
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -29,6 +29,24 @@ button {
   color: inherit;
 }
 
+/* Hidden accessible input that captures native iOS/Android keyboard keystrokes */
+.native-keyboard-input {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0.01;
+  font-size: 16px; /* Must be >= 16px to prevent iOS auto-zoom */
+  pointer-events: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  z-index: -1;
+}
+
 /* Master Shell: Zero vertical scroll, fits exact screen height */
 .apple-game-shell {
   width: 100%;
@@ -42,7 +60,7 @@ button {
   position: relative;
   overflow: hidden;
   padding-top: max(8px, env(safe-area-inset-top));
-  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
 }
 
 /* 1. Apple Top Navigation Bar */
@@ -50,8 +68,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 16px 4px;
-  height: 48px;
+  padding: 4px 16px 2px;
+  height: 44px;
   flex-shrink: 0;
   z-index: 50;
 }
@@ -98,12 +116,12 @@ button {
 }
 
 .apple-timer-pill.is-paused {
-  border-color: #ff5a27;
-  color: #ff5a27;
+  border-color: #40916c;
+  color: #52b788;
 }
 
 .timer-play-glyph {
-  color: #ff5a27;
+  color: #52b788;
 }
 
 .apple-top-pill-group {
@@ -196,7 +214,7 @@ button {
   margin: 4px 6px;
 }
 
-/* 2. Apple Crossword Board Section */
+/* 2. Crossword Board Section */
 .apple-board-section {
   flex: 1;
   display: flex;
@@ -216,9 +234,9 @@ button {
 }
 
 .apple-board {
-  /* Dynamic sizing fits both tiny phones and desktop without causing scroll */
-  width: min(calc(100vw - 32px), calc(100dvh - 350px));
-  max-width: 440px;
+  /* Fits nicely with the native keyboard open */
+  width: min(calc(100vw - 32px), calc(100dvh - 220px));
+  max-width: 430px;
   aspect-ratio: 1;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -239,7 +257,7 @@ button {
   height: 100%;
   border-radius: 11px;
   background: #242426;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.03);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -254,28 +272,32 @@ button {
 
 .apple-cell-block {
   background: #444446 !important;
+  border-color: transparent !important;
   pointer-events: none;
 }
 
-/* Active Highlight States (Apple Crossword Colors) */
+/* Active Highlight States (Pair 2: Hunter Green & Deep Shadow Pine) */
 .apple-cell.in-word {
-  background: #6e2f1f; /* Deep warm rust for the active word */
+  background: #122d21; /* Deep Shadow Pine for active word */
+  border-color: #1a4231;
 }
 
 .apple-cell.is-selected {
-  background: #ff5a27 !important; /* Electric vibrant orange for active cell */
+  background: #2d6a4f !important; /* Rich Hunter Green for active cursor cell */
+  border: 1px solid #52b788 !important;
   transform: scale(0.97);
   z-index: 2;
-  box-shadow: 0 4px 14px rgba(255, 90, 39, 0.4);
+  box-shadow: 0 4px 16px rgba(45, 106, 79, 0.5);
 }
 
 .apple-cell.is-wrong {
   animation: cellShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   background: #8b2525 !important;
+  border-color: #d94f4f !important;
 }
 
 .apple-cell.is-revealed .apple-cell-val {
-  color: #4cd964;
+  color: #74c69d;
 }
 
 @keyframes cellShake {
@@ -344,19 +366,22 @@ button {
   color: #8e8e93;
 }
 
-/* 3. Floating Active Clue Bar (Directly below board) */
+/* 3. Floating Active Clue Bar (Multi-Line auto-adjusting pill) */
 .apple-clue-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 6px 16px 8px;
+  margin: 4px 16px 6px;
   background: #1c1c1e;
   border: 1px solid #2c2c2e;
-  border-radius: 20px;
-  padding: 7px 10px 7px 12px;
-  height: 44px;
+  border-radius: 18px;
+  padding: 8px 10px 8px 12px;
+  min-height: 44px;
+  height: auto;
   flex-shrink: 0;
   z-index: 30;
+  cursor: pointer;
+  transition: min-height 0.15s ease;
 }
 
 .apple-clue-bar-toggle {
@@ -366,6 +391,7 @@ button {
   justify-content: center;
   padding: 4px;
   border-radius: 50%;
+  flex-shrink: 0;
   transition: color 0.12s ease;
 }
 
@@ -377,10 +403,9 @@ button {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   cursor: pointer;
-  overflow: hidden;
 }
 
 .apple-clue-bar-lead {
@@ -391,10 +416,12 @@ button {
   font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
+  line-height: 1.3;
+  margin-top: 1px;
 }
 
 .apple-clue-bar-arrow {
-  color: #ff5a27;
+  color: #40916c;
   font-size: 9px;
   transform: translateY(-0.5px);
 }
@@ -403,15 +430,21 @@ button {
   font-size: 13px;
   font-weight: 500;
   color: #ffffff;
-  white-space: nowrap;
+  line-height: 1.3;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 .apple-clue-bar-nav {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .apple-stepper-btn {
@@ -430,67 +463,81 @@ button {
   transform: scale(0.9);
 }
 
-/* 4. Dual-Mode Bottom Deck (Keyboard or Clue List in exact same footprint) */
+/* 4. Bottom Deck: Native Mode Toolbar or Clue List */
 .apple-bottom-deck {
-  height: 216px;
-  max-height: 216px;
-  min-height: 216px;
   flex-shrink: 0;
-  padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+  padding: 2px 16px calc(6px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
 }
 
-/* Mode A: Apple On-Screen Keyboard */
-.apple-keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
+.apple-bottom-deck.deck-native-view {
+  height: 46px;
+  min-height: 46px;
+  max-height: 46px;
 }
 
-.apple-kbd-row {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-  width: 100%;
+.apple-bottom-deck.deck-clues-view {
+  height: 220px;
+  min-height: 220px;
+  max-height: 220px;
 }
 
-.apple-kbd-key {
-  flex: 1;
-  max-width: 44px;
-  height: 48px;
-  background: #48484a;
-  border-radius: 6px;
-  color: #ffffff;
-  font-size: 20px;
-  font-weight: 500;
+/* Native Deck Toolbar (Slim controls docked right above native keyboard) */
+.native-deck-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.08s ease, transform 0.08s ease;
+  gap: 8px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  height: 40px;
+}
+
+.native-deck-btn {
+  flex: 1;
+  height: 38px;
+  background: #1c1c1e;
+  border: 1px solid #2c2c2e;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background-color 0.1s ease, transform 0.08s ease;
   touch-action: manipulation;
 }
 
-.apple-kbd-key:active {
-  background: #636366;
+.native-deck-btn:active {
+  background: #2c2c2e;
   transform: scale(0.96);
 }
 
-.apple-kbd-fn {
-  background: #323234;
+.native-deck-flip {
+  background: #122d21;
+  border-color: #2d6a4f;
+  color: #74c69d;
+}
+
+.native-deck-flip:active {
+  background: #1b4332;
+}
+
+.native-deck-del {
+  flex: 0 0 46px;
   color: #8e8e93;
-  max-width: 52px;
 }
 
-.apple-kbd-fn:active {
-  background: #48484a;
+.native-deck-del:active {
   color: #ffffff;
+  background: #2c2c2e;
 }
 
-/* Mode B: Apple Clues List Deck */
+/* Clues List Deck Mode */
 .apple-clues-deck {
   display: flex;
   flex-direction: column;
@@ -561,8 +608,9 @@ button {
 }
 
 .apple-clue-list-row.is-active {
-  background: #6e2f1f !important; /* Apple Screenshot warm rust highlight */
+  background: #122d21 !important; /* Deep Shadow Pine highlight */
   color: #ffffff !important;
+  border-left: 3px solid #2d6a4f;
 }
 
 .apple-clue-row-num {
@@ -627,9 +675,9 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(255, 90, 39, 0.15);
-  border: 1px solid #ff5a27;
-  color: #ff5a27;
+  background: rgba(45, 106, 79, 0.2);
+  border: 1px solid #2d6a4f;
+  color: #74c69d;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -804,8 +852,8 @@ button {
 }
 
 .apple-theme-tile.is-active {
-  border-color: #ff5a27;
-  background: #2c2c2e;
+  border-color: #40916c;
+  background: #122d21;
 }
 
 .apple-theme-tile-top {
@@ -830,7 +878,7 @@ button {
   gap: 3px;
   font-size: 10px;
   font-weight: 700;
-  color: #4cd964;
+  color: #74c69d;
 }
 
 .apple-theme-tile-info h4 {
