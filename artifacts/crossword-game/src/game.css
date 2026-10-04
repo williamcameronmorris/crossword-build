@@ -773,6 +773,14 @@ kbd {
   transform: scale(0.98);
 }
 
+.cc-all-done {
+  margin: 0;
+  align-self: center;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .cc-btn-quiet {
   background: transparent;
   color: var(--ink);

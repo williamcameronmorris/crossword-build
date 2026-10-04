@@ -38,6 +38,7 @@ import {
   loadBest,
   loadProgress,
   recordBest,
+  pickNextPuzzle,
   recordSolveForStreak,
   saveProgress,
 } from './storage';
@@ -404,6 +405,12 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     setMenu(null);
   };
 
+  // Picked fresh each time the result sheet opens, so you never get sent to a puzzle you've solved.
+  const nextId = useMemo(
+    () => (modal === 'result' ? pickNextPuzzle(count, puzzle.id, dailyId) : null),
+    [modal, count, puzzle.id, dailyId],
+  );
+
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   const isDaily = puzzle.id === dailyId;
   const highlighted = new Set(activeEntry.cells.map((c) => keyFor(c.row, c.col)));
@@ -668,9 +675,13 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
               <button type="button" className="cc-btn cc-btn-quiet" onClick={share}>
                 <ShareNetwork size={16} weight="bold" /> {copied ? 'Copied' : 'Share'}
               </button>
-              <button type="button" className="cc-btn" onClick={() => onOpenPuzzle(puzzle.id >= count ? 1 : puzzle.id + 1)}>
-                Next puzzle <ArrowRight size={16} weight="bold" />
-              </button>
+              {nextId !== null ? (
+                <button type="button" className="cc-btn" onClick={() => onOpenPuzzle(nextId)}>
+                  {nextId === dailyId ? "Today's puzzle" : 'New puzzle'} <ArrowRight size={16} weight="bold" />
+                </button>
+              ) : (
+                <p className="cc-all-done">Every puzzle solved. New ones are on the way.</p>
+              )}
             </div>
             <button type="button" className="cc-link" onClick={() => setModal('archive')}>
               Browse the archive

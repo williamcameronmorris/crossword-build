@@ -87,6 +87,18 @@ export function scanArchive(): { solved: Set<number>; started: Set<number> } {
   return { solved, started };
 }
 
+/**
+ * The next puzzle to offer: today's if it's still open, otherwise a random puzzle never opened
+ * on this device, then any unfinished one. Returns null once every puzzle is solved.
+ */
+export function pickNextPuzzle(count: number, currentId: number, dailyId: number): number | null {
+  const { solved, started } = scanArchive();
+  if (dailyId > 0 && dailyId !== currentId && !solved.has(dailyId)) return dailyId;
+  const random = (ids: number[]) => (ids.length ? ids[Math.floor(Math.random() * ids.length)] : null);
+  const all = Array.from({ length: count }, (_, i) => i + 1).filter((id) => id !== currentId);
+  return random(all.filter((id) => !solved.has(id) && !started.has(id))) ?? random(all.filter((id) => !solved.has(id)));
+}
+
 // --- streak: consecutive calendar days with at least one unassisted solve ---
 
 type StreakState = { count: number; last: string | null };

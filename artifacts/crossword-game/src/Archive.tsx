@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle, X } from '@phosphor-icons/react';
-import { scanArchive } from './storage';
+import { pickNextPuzzle, scanArchive } from './storage';
 
 type Props = {
   count: number;
@@ -23,8 +23,8 @@ export function Archive({ count, currentId, dailyId, onClose, onPick }: Props) {
   }, [count, filter, solved]);
 
   const pickRandom = () => {
-    const pool = ids.filter((id) => id !== currentId);
-    if (pool.length) onPick(pool[Math.floor(Math.random() * pool.length)]);
+    const id = pickNextPuzzle(count, currentId, -1);
+    if (id !== null) onPick(id);
   };
 
   return (
@@ -61,7 +61,7 @@ export function Archive({ count, currentId, dailyId, onClose, onPick }: Props) {
               Today
             </button>
             <button type="button" className="cc-link" onClick={pickRandom}>
-              Random
+              Surprise me
             </button>
           </div>
         </div>
