@@ -1,1020 +1,921 @@
-/* Crossword Theme - Aesthetic Light Cream & Hunter Green */
+/* Clue & Co.: newsprint editorial. Warm paper, ink grid, one vermilion accent. */
+
 :root {
-  /* Emil Kowalski's signature motion curves */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --paper: #f7f6f3;
+  --surface: #fdfcfa;
+  --ink: #161616;
+  --text: #1f1e1c;
+  --muted: #787774;
+  --rule: rgba(22, 22, 22, 0.12);
+  --grid-line: #161616;
+  --cell: #fdfcfa;
+  --block: #161616;
+  --word: #f6e3d9;
+  --selected: #c8451f;
+  --selected-text: #fdfcfa;
+  --accent: #c8451f;
+  --wrong-bg: #fdebec;
+  --wrong: #9f2f2d;
+  --revealed: #1f6c9f;
+  --scrim: rgba(22, 22, 22, 0.32);
+
+  --serif: 'Instrument Serif', 'Newsreader', Georgia, serif;
+  --sans: 'Geist', 'SF Pro Text', system-ui, sans-serif;
+  --mono: 'Geist Mono', 'SF Mono', ui-monospace, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: light;
 }
 
-* {
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #141413;
+    --surface: #1c1c1a;
+    --ink: #edebe6;
+    --text: #e8e6e1;
+    --muted: #9a9893;
+    --rule: rgba(237, 235, 230, 0.14);
+    --grid-line: #3b3a37;
+    --cell: #1f1f1d;
+    --block: #050505;
+    --word: #3a2620;
+    --selected: #e8714c;
+    --selected-text: #141413;
+    --accent: #e8714c;
+    --wrong-bg: #3d1f1f;
+    --wrong: #f1a3a1;
+    --revealed: #7cc0ec;
+    --scrim: rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+kbd {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+/* --- shell -------------------------------------------------------------- */
+
+.cc-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  height: var(--vv-height, 100dvh);
+  margin: 0 auto;
+  padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background-color: #F7F4EE;
-  color: #1C1E1D;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  touch-action: manipulation;
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: auto;
+.cc-center {
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-  padding: 0;
-  color: inherit;
-}
-
-/* Master Shell: Locked towards top with zero scroll, mobile-only */
-.apple-game-shell {
-  width: 100%;
-  max-width: 440px;
-  margin: 0 auto;
-  height: 100%;
-  height: 100dvh;
-  height: var(--vv-height, 100dvh);
-  max-height: var(--vv-height, 100dvh);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* Keeps the entire app anchored to top like Apple News */
-  background: #F7F4EE;
-  position: relative;
-  overflow: hidden;
-  padding-top: max(2px, env(safe-area-inset-top));
-  padding-bottom: max(4px, env(safe-area-inset-bottom));
-}
-
-/* Hidden Native Input Trap */
-.apple-native-input-trap {
+.cc-input-trap {
   position: fixed;
   top: 0;
   left: 0;
   width: 1px;
   height: 1px;
-  opacity: 0.001;
-  pointer-events: none;
-  font-size: 16px;
-  border: none;
-  margin: 0;
+  opacity: 0;
+  border: 0;
   padding: 0;
-  background: transparent;
+  font-size: 16px; /* below 16px iOS zooms on focus */
   color: transparent;
   caret-color: transparent;
-  z-index: -1;
+  background: transparent;
+  pointer-events: none;
 }
 
-/* 1. Apple Top Navigation Bar */
-.apple-topbar {
+/* --- masthead ----------------------------------------------------------- */
+
+.cc-masthead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 16px 4px;
-  height: 42px;
-  flex-shrink: 0;
-  z-index: 50;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ink);
 }
 
-.apple-circle-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  color: #1C1E1D;
+.cc-wordmark,
+.cc-wordmark-static {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.cc-wordmark em,
+.cc-wordmark-static em {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.cc-wordmark-static {
+  font-size: 44px;
+}
+
+.cc-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(40, 30, 20, 0.05);
-  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out);
-}
-
-.apple-circle-btn:active {
-  background: #EDE7DC;
-  transform: scale(0.94);
-}
-
-.apple-timer-pill {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 15px;
-  border-radius: 9999px;
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  color: #1C1E1D;
-  font-size: 15px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  box-shadow: 0 1px 3px rgba(40, 30, 20, 0.05);
-  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out), border-color 140ms var(--ease-out);
-}
-
-.apple-timer-pill:active {
-  background: #EDE7DC;
-  transform: scale(0.96);
-}
-
-.apple-timer-pill.is-paused {
-  border-color: #2D6A4F;
-  color: #2D6A4F;
-  background: #EAF4EE;
-}
-
-.timer-play-glyph {
-  color: #2D6A4F;
-}
-
-.apple-top-pill-group {
-  display: flex;
-  align-items: center;
-  height: 34px;
-  border-radius: 9999px;
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  padding: 0 4px;
   gap: 2px;
-  box-shadow: 0 1px 3px rgba(40, 30, 20, 0.05);
 }
 
-.apple-pill-btn {
-  width: 32px;
-  height: 28px;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6E736E;
-  transition: transform 120ms var(--ease-out), color 120ms var(--ease-out), background-color 120ms var(--ease-out);
+.cc-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  color: var(--ink);
+  transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out);
 }
 
-.apple-pill-btn:active {
+.cc-icon-btn:hover,
+.cc-icon-btn.is-on {
+  background: var(--rule);
+}
+
+.cc-icon-btn:active {
   transform: scale(0.94);
-  color: #1C1E1D;
-  background: #EBE5DB;
 }
 
-.apple-pill-btn.is-active {
-  color: #1C1E1D;
-  background: #EBE5DB;
-}
-
-/* Popover Menus: Origin-Aware & Blooming from Trigger */
-.apple-menu-anchor {
+.cc-menu-anchor {
   position: relative;
 }
 
-.apple-popover-menu {
+.cc-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   right: 0;
-  min-width: 200px;
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(40, 30, 20, 0.14), 0 2px 6px rgba(40, 30, 20, 0.06);
+  z-index: 40;
+  min-width: 210px;
   padding: 6px;
-  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px -12px rgba(22, 22, 22, 0.18);
+  animation: cc-pop 180ms var(--ease-out);
   transform-origin: top right;
-  animation: popoverFadeIn 160ms var(--ease-out);
 }
 
-@keyframes popoverFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.apple-popover-header {
-  font-size: 11px;
-  font-weight: 700;
-  color: #8A8F8A;
-  letter-spacing: 0.06em;
-  padding: 6px 12px 2px;
-}
-
-.apple-popover-item {
-  width: 100%;
+.cc-menu button {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  font-size: 14px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 5px;
+  font-size: 15px;
   font-weight: 500;
-  color: #1C1E1D;
   text-align: left;
-  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
 }
 
-.apple-popover-item:active {
-  background-color: #F2EDE4;
-  transform: scale(0.98);
+.cc-menu button:hover {
+  background: var(--rule);
 }
 
-.apple-popover-divider {
-  height: 1px;
-  background: #EAE4D9;
-  margin: 4px 6px;
-}
-
-/* 2. Crossword Board Section - Moved tight toward top matching Apple News */
-.apple-board-section {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 2px 14px 2px;
-  flex-shrink: 0;
-  position: relative;
-}
-
-.apple-board-container {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.apple-board {
-  /* Anchored tight toward top, fits perfectly in visual viewport above native keyboard */
-  width: min(calc(100vw - 28px), calc(var(--vv-height, 100dvh) - 110px), 360px);
-  max-width: 360px;
-  aspect-ratio: 1;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
-  background: #F7F4EE;
-  transition: opacity 200ms var(--ease-out), filter 200ms var(--ease-out);
-}
-
-.apple-board.is-paused {
-  filter: blur(8px);
-  opacity: 0.3;
-}
-
-.apple-board.is-shaking {
-  animation: boardShake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-@keyframes boardShake {
-  0%, 100% { transform: translateX(0); }
-  15%, 45%, 75% { transform: translateX(-5px); }
-  30%, 60%, 90% { transform: translateX(5px); }
-}
-
-/* Board Cells */
-.apple-cell {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  background: #FFFFFF;
-  border: 1px solid #D8D2C7;
-  box-shadow: 0 1px 2px rgba(40, 30, 20, 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1C1E1D;
-  transition: background-color 100ms var(--ease-out), transform 80ms var(--ease-out);
-  touch-action: manipulation;
-}
-
-.apple-cell:active {
-  transform: scale(0.96);
-}
-
-/* Debossed Toasted Cream Block Cells */
-.apple-cell-block {
-  background: #E4DDD2 !important;
-  border: 1px solid #D6CEC1 !important;
-  pointer-events: none;
-  box-shadow: inset 0 1px 3px rgba(50, 40, 30, 0.08) !important;
-}
-
-/* Active Highlight States (Hunter Green & Soft Sage in-word) */
-.apple-cell.in-word {
-  background: #D8EADB; /* Beautiful soft sage / eucalyptus tint */
-  border-color: #9EC7A4;
-  color: #133821;
-}
-
-.apple-cell.is-selected {
-  background: #2D6A4F !important; /* Rich Hunter Green for active cell */
-  border: 1px solid #1B4D39 !important;
-  color: #FFFFFF !important;
-  transform: scale(0.97);
-  z-index: 2;
-  box-shadow: 0 4px 14px rgba(45, 106, 79, 0.4);
-}
-
-.apple-cell.is-wrong {
-  animation: cellShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  background: #FDE8E8 !important;
-  border-color: #E27B7B !important;
-  color: #A32020 !important;
-}
-
-.apple-cell.is-incorrect-pulse {
-  animation: cellShake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  background: #FDE8E8 !important;
-  border-color: #E27B7B !important;
-  color: #A32020 !important;
-}
-
-.apple-cell.is-revealed .apple-cell-val {
-  color: #2D6A4F;
-}
-
-@keyframes cellShake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
-  40%, 60% { transform: translate3d(3px, 0, 0); }
-}
-
-.apple-cell-num {
-  position: absolute;
-  top: 3px;
-  left: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #7A807A;
-  line-height: 1;
-}
-
-.apple-cell.in-word .apple-cell-num {
-  color: #245738;
-}
-
-.apple-cell.is-selected .apple-cell-num {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.apple-cell-val {
-  font-size: clamp(22px, 6vw, 36px);
-  font-weight: 700;
-  line-height: 1;
+.cc-menu-label {
+  margin: 8px 10px 2px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--muted);
 }
 
-/* Pause Overlay */
-.apple-pause-overlay {
-  position: absolute;
-  inset: 0;
+.cc-menu-label:first-child {
+  margin-top: 4px;
+}
+
+.cc-menu-note {
+  margin: 6px 10px 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* --- dateline ----------------------------------------------------------- */
+
+.cc-dateline {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 40;
-  cursor: pointer;
-  background: rgba(247, 244, 238, 0.7);
-  backdrop-filter: blur(8px);
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.apple-pause-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  padding: 24px 32px;
-  border-radius: 20px;
-  box-shadow: 0 16px 40px rgba(40, 30, 20, 0.14);
-  text-align: center;
-  color: #1C1E1D;
-  transition: transform 140ms var(--ease-out);
+.cc-dateline-id {
+  color: var(--ink);
+  font-weight: 500;
 }
 
-.apple-pause-card:active {
-  transform: scale(0.97);
-}
-
-.apple-pause-card h3 {
-  margin: 6px 0 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1C1E1D;
-}
-
-.apple-pause-card p {
-  margin: 0;
-  font-size: 13px;
-  color: #6E736E;
-}
-
-/* 3. Floating Active Clue Bar (Multi-Line auto-adjusting pill directly below board) */
-.apple-clue-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 2px 14px 4px;
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  border-radius: 18px;
-  padding: 7px 10px 7px 12px;
-  min-height: 42px;
-  height: auto;
-  flex-shrink: 0;
-  z-index: 30;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(40, 30, 20, 0.05);
-}
-
-.apple-clue-bar-toggle {
-  color: #6E736E;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: transform 120ms var(--ease-out), color 120ms var(--ease-out);
-}
-
-.apple-clue-bar-toggle:active {
-  color: #1C1E1D;
-  transform: scale(0.92);
-}
-
-.apple-clue-bar-content {
+.cc-dateline-date {
   flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.apple-clue-bar-lead {
+.cc-timer {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #2D6A4F;
-  white-space: nowrap;
-  line-height: 1.3;
-  margin-top: 1px;
+  gap: 6px;
+  padding: 4px 8px;
+  margin: -4px -8px -4px 0;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: var(--ink);
 }
 
-.apple-clue-bar-arrow {
-  color: #2D6A4F;
-  font-size: 9px;
-  transform: translateY(-0.5px);
+.cc-timer:hover {
+  background: var(--rule);
 }
 
-.apple-clue-bar-text {
-  font-size: 13px;
+.cc-timer.is-paused {
+  color: var(--accent);
+}
+
+/* --- board -------------------------------------------------------------- */
+
+.cc-board-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 14px;
+}
+
+.cc-board {
+  display: grid;
+  width: min(100%, calc(var(--vv-height, 100dvh) - 250px));
+  min-width: 220px;
+  aspect-ratio: 1;
+  gap: 1px;
+  padding: 0;
+  background: var(--grid-line);
+  border: 2px solid var(--grid-line);
+  transition: filter 200ms var(--ease-out);
+}
+
+.cc-board.is-hidden .cc-cell-letter,
+.cc-board.is-hidden .cc-cell-num {
+  visibility: hidden;
+}
+
+.cc-board.is-hidden {
+  filter: saturate(0);
+}
+
+.cc-board.is-shaking {
+  animation: cc-shake 420ms var(--ease-out);
+}
+
+.cc-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  background: var(--cell);
+  color: var(--ink);
+  transition: background-color 120ms linear;
+}
+
+.cc-cell.is-block {
+  background: var(--block);
+}
+
+.cc-cell.in-word {
+  background: var(--word);
+}
+
+.cc-cell.is-selected {
+  background: var(--selected);
+  color: var(--selected-text);
+}
+
+.cc-cell-num {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  font-family: var(--mono);
+  font-size: clamp(9px, 2.6vw, 12px);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.cc-cell-letter {
+  font-family: var(--sans);
+  font-size: clamp(26px, 9vw, 44px);
   font-weight: 600;
-  color: #1C1E1D;
-  line-height: 1.3;
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  transform: translateY(6%);
+}
+
+.cc-cell.is-wrong {
+  background: var(--wrong-bg);
+  color: var(--wrong);
+}
+
+.cc-cell.is-wrong .cc-cell-letter {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.cc-cell.is-wrong.is-selected {
+  background: var(--wrong);
+  color: var(--wrong-bg);
+}
+
+/* Revealed squares get a small corner mark, like a proofreader's tick. */
+.cc-cell.is-revealed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-style: solid;
+  border-width: 0 10px 10px 0;
+  border-color: transparent var(--revealed) transparent transparent;
+}
+
+.cc-board.is-solved .cc-cell:not(.is-block) {
+  animation: cc-ink 600ms var(--ease-out) both;
+}
+
+.cc-paused {
+  position: absolute;
+  inset: 16px 0 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cc-paused-title {
+  font-family: var(--serif);
+  font-size: 44px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  background: var(--paper);
+  padding: 0 14px;
+}
+
+.cc-paused-sub {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--paper);
+  padding: 2px 10px;
+}
+
+/* --- clue bar ----------------------------------------------------------- */
+
+.cc-cluebar {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: stretch;
+  min-height: 72px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+}
+
+.cc-step {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+
+.cc-step:active {
+  transform: scale(0.9);
+}
+
+.cc-cluebar-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
   text-align: left;
 }
 
-.apple-clue-bar-nav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
+.cc-cluebar-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
-.apple-stepper-btn {
-  color: #6E736E;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  transition: transform 120ms var(--ease-out), color 120ms var(--ease-out);
+.cc-cluebar-text {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text);
 }
 
-.apple-stepper-btn:active {
-  color: #1C1E1D;
-  transform: scale(0.90);
-}
+/* --- clue list ---------------------------------------------------------- */
 
-/* 4. Native Keyboard Dock & Clues Deck */
-.apple-keyboard-dock {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-}
-
-/* Mode: Apple Clues Deck Card (Real iOS Drawer Slide) */
-.apple-clues-deck-card {
-  flex: 1;
-  min-height: 0;
-  margin: 2px 14px calc(4px + env(safe-area-inset-bottom));
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  border-radius: 18px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(40, 30, 20, 0.08);
-  animation: slideDeckUp 220ms var(--ease-drawer);
-}
-
-@keyframes slideDeckUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0.8;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.apple-clues-deck-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 8px;
-  border-bottom: 1px solid #ECE7DE;
-  flex-shrink: 0;
-  background: #FAF7F2;
-}
-
-.apple-clues-close-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #EDE7DC;
-  color: #1C1E1D;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
-}
-
-.apple-clues-close-btn:active {
-  transform: scale(0.92);
-  background: #E2DBD0;
-}
-
-/* Segmented Control (Across | Down) */
-.apple-segmented-bar {
-  display: flex;
-  background: #EAE4DA;
-  border-radius: 9999px;
-  padding: 3px;
-  gap: 2px;
-}
-
-.apple-segment-tab {
-  padding: 6px 18px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6E736E;
-  transition: transform 120ms var(--ease-out), background-color 140ms var(--ease-out), color 140ms var(--ease-out);
-}
-
-.apple-segment-tab:active {
-  transform: scale(0.95);
-}
-
-.apple-segment-tab.is-active {
-  background: #FFFFFF;
-  color: #1C1E1D;
-  box-shadow: 0 2px 6px rgba(40, 30, 20, 0.08);
-}
-
-/* Clues List */
-.apple-clues-deck-list {
+.cc-cluelist {
+  display: none;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  padding: 6px 0 12px;
   -webkit-overflow-scrolling: touch;
 }
 
-.apple-clue-list-row {
+.cc-cluelist.is-open {
+  display: block;
+  animation: cc-rise 260ms var(--ease-out);
+}
+
+.cc-cluelist-col h2 {
+  margin: 14px 0 4px;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: capitalize;
+  color: var(--ink);
+}
+
+.cc-cluelist ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-cluelist li button {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 8px;
   width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  color: #4C524C;
-  font-size: 14px;
+  padding: 9px 8px;
+  border-radius: 5px;
   text-align: left;
-  line-height: 1.35;
-  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
+  font-size: 15px;
+  line-height: 1.45;
 }
 
-.apple-clue-list-row:active {
-  background: #F4EFE6;
-  transform: scale(0.985);
+.cc-cluelist li button:hover {
+  background: var(--rule);
 }
 
-.apple-clue-list-row.is-active {
-  background: #D8EADB !important;
-  color: #133821 !important;
-  border-left: 3px solid #2D6A4F;
+.cc-cluelist li button.is-active {
+  background: var(--word);
 }
 
-.apple-clue-row-num {
-  font-weight: 700;
-  min-width: 18px;
-  color: inherit;
+.cc-cluelist li button.is-done {
+  color: var(--muted);
 }
 
-.apple-clue-row-text {
+.cc-cluelist-num {
+  font-family: var(--mono);
+  font-size: 13px;
   font-weight: 500;
-  color: inherit;
-  flex: 1;
+  padding-top: 2px;
+  color: var(--ink);
 }
 
-/* 5. Modals & Overlays (Theme Gallery, Completion, How to Play) */
-.apple-modal-backdrop {
+/* --- sheets (result, archive, help) ------------------------------------- */
+
+.cc-scrim {
   position: fixed;
   inset: 0;
-  background: rgba(30, 32, 30, 0.45);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  z-index: 1000;
+  z-index: 100;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 18px;
-  animation: modalFadeIn 200ms var(--ease-out);
+  background: var(--scrim);
+  animation: cc-fade 200ms var(--ease-out);
 }
 
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.apple-modal-card {
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  border-radius: 24px;
+.cc-sheet {
+  position: relative;
   width: 100%;
-  max-width: 380px;
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  box-shadow: 0 24px 48px rgba(40, 30, 20, 0.18);
-  color: #1C1E1D;
+  max-width: 520px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 28px 24px max(24px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 2px solid var(--ink);
+  border-radius: 12px 12px 0 0;
+  animation: cc-sheet 320ms var(--ease-out);
 }
 
-.apple-modal-icon {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: #FAF7F2;
-  border: 1px solid #DFD9CE;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  margin-bottom: 12px;
+@media (min-width: 640px) {
+  .cc-scrim {
+    align-items: center;
+  }
+
+  .cc-sheet {
+    border-radius: 12px;
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--ink);
+  }
 }
 
-.apple-record-badge {
+.cc-sheet-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+.cc-sheet-close:hover {
+  background: var(--rule);
+}
+
+.cc-eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cc-sheet-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.cc-sheet-sub {
+  margin: 8px 0 0;
+  max-width: 42ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.cc-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 24px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.cc-stats div {
+  padding: 14px 0;
+}
+
+.cc-stats div + div {
+  padding-left: 14px;
+  border-left: 1px solid var(--rule);
+}
+
+.cc-stats dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cc-stats dd {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.cc-sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+
+.cc-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: #E8F4EC;
-  border: 1px solid #2D6A4F;
-  color: #2D6A4F;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  margin-bottom: 10px;
-}
-
-.apple-modal-eyebrow {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: #7A807A;
-  letter-spacing: 0.08em;
-}
-
-.apple-modal-title {
-  margin: 4px 0 2px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #1C1E1D;
-}
-
-.apple-modal-subtitle {
-  margin: 0 0 18px;
-  font-size: 13px;
-  color: #6E736E;
-}
-
-.apple-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  justify-content: center;
   gap: 8px;
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.apple-stat-card {
-  background: #F7F4EE;
-  border: 1px solid #E4DDD1;
-  border-radius: 12px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.apple-stat-card .stat-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #7A807A;
-  letter-spacing: 0.05em;
-}
-
-.apple-stat-card .stat-val {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1C1E1D;
-}
-
-.apple-modal-actions {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-
-.apple-action-btn {
-  flex: 1;
-  height: 44px;
-  border-radius: 12px;
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
   font-size: 15px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: transform 140ms var(--ease-out), opacity 140ms var(--ease-out);
+  transition: transform 120ms var(--ease-out), opacity 160ms;
 }
 
-.apple-action-btn:active {
-  transform: scale(0.96);
+.cc-btn:hover {
+  opacity: 0.88;
 }
 
-.apple-action-primary {
-  background: #2D6A4F;
-  color: #FFFFFF;
+.cc-btn:active {
+  transform: scale(0.98);
 }
 
-.apple-action-primary:active {
-  background: #23553E;
+.cc-btn-quiet {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
 }
 
-.apple-action-secondary {
-  background: #F0ECE2;
-  border: 1px solid #DFD9CE;
-  color: #1C1E1D;
-}
-
-.apple-action-secondary:active {
-  background: #E5DFC4;
-}
-
-.apple-browse-link {
-  margin-top: 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6E736E;
-  text-decoration: underline;
-  transition: color 120ms var(--ease-out);
-}
-
-/* Theme Gallery Modal */
-.apple-theme-modal-card {
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  border-radius: 24px;
+.cc-btn-wide {
   width: 100%;
-  max-width: 480px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(40, 30, 20, 0.2);
-  color: #1C1E1D;
+  margin-top: 20px;
 }
 
-.apple-theme-modal-header {
+.cc-link {
+  display: block;
+  margin: 18px auto 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+
+.cc-help {
+  margin: 20px 0 0;
+}
+
+.cc-help div {
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.cc-help dt {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.cc-help dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* --- archive ------------------------------------------------------------ */
+
+.cc-archive-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid #ECE7DE;
-  background: #FAF7F2;
+  margin: 20px 0 12px;
+  border-bottom: 1px solid var(--rule);
 }
 
-.apple-theme-modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1C1E1D;
-}
-
-.apple-theme-modal-header p {
-  margin: 3px 0 0;
-  font-size: 12px;
-  color: #6E736E;
-}
-
-.apple-circle-close-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #EDE7DC;
-  color: #1C1E1D;
+.cc-tabs {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
+  gap: 18px;
 }
 
-.apple-circle-close-btn:active {
-  transform: scale(0.92);
-  background: #E0D8CB;
+.cc-tabs button {
+  padding: 8px 0;
+  margin-bottom: -1px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
 }
 
-.apple-theme-grid {
-  padding: 14px 16px 20px;
-  overflow-y: auto;
+.cc-tabs button.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.cc-archive-quick {
+  display: flex;
+  gap: 16px;
+}
+
+.cc-archive-quick .cc-link {
+  margin: 0;
+}
+
+.cc-archive-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 10px;
-  background: #FAF7F2;
-}
-
-.apple-theme-tile {
-  background: #FFFFFF;
-  border: 1px solid #DFD9CE;
-  border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: left;
-  box-shadow: 0 1px 3px rgba(40, 30, 20, 0.04);
-  transition: transform 120ms var(--ease-out), border-color 120ms var(--ease-out);
-}
-
-.apple-theme-tile:active {
-  transform: scale(0.97);
-}
-
-.apple-theme-tile.is-active {
-  border-color: #2D6A4F;
-  background: #D8EADB;
-}
-
-.apple-theme-best-chip {
-  font-size: 10px;
-  font-weight: 700;
-  color: #B57A18;
-}
-
-.apple-theme-solved-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #2D6A4F;
-}
-
-.apple-theme-tile-info h4 {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-archive-grid button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-family: var(--mono);
   font-size: 14px;
-  font-weight: 600;
-  color: #1C1E1D;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background-color 140ms;
 }
 
-.apple-theme-tile-info p {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: #6E736E;
-  line-height: 1.25;
+.cc-archive-grid button:hover {
+  background: var(--rule);
 }
 
-/* Help Modal Details */
-.apple-help-card {
-  max-width: 400px;
-  text-align: left;
-  align-items: stretch;
-  background: #FFFFFF;
+.cc-archive-grid button.is-started {
+  background: var(--word);
 }
 
-.apple-help-content {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 16px 0 20px;
+.cc-archive-grid button.is-solved {
+  color: var(--accent);
 }
 
-.apple-help-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.cc-archive-grid button.is-daily {
+  border-color: var(--accent);
+  border-width: 2px;
 }
 
-.apple-help-icon {
-  font-size: 22px;
-  line-height: 1;
+.cc-archive-grid button.is-current {
+  background: var(--ink);
+  color: var(--paper);
 }
 
-.apple-help-row h4 {
-  margin: 0 0 2px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1C1E1D;
+/* --- wide screens: clues sit beside the board --------------------------- */
+
+@media (min-width: 900px) and (min-height: 600px) {
+  .cc-shell {
+    display: grid;
+    max-width: 980px;
+    grid-template-columns: minmax(0, 560px) minmax(280px, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: 40px;
+    padding-top: 28px;
+  }
+
+  .cc-masthead,
+  .cc-dateline {
+    grid-column: 1 / -1;
+  }
+
+  .cc-board-wrap {
+    grid-column: 1;
+    grid-row: 3;
+    padding-top: 28px;
+  }
+
+  .cc-board {
+    width: min(100%, calc(var(--vv-height, 100dvh) - 320px));
+  }
+
+  .cc-cluebar {
+    grid-column: 1;
+    grid-row: 4;
+    align-self: start;
+  }
+
+  .cc-cluelist,
+  .cc-cluelist.is-open {
+    display: block;
+    grid-column: 2;
+    grid-row: 3 / 5;
+    padding-top: 16px;
+    animation: none;
+  }
+
+  .cc-actions > .cc-icon-btn:first-child {
+    display: none;
+  }
 }
 
-.apple-help-row p {
-  margin: 0;
-  font-size: 12px;
-  color: #6E736E;
-  line-height: 1.35;
+/* --- motion ------------------------------------------------------------- */
+
+@keyframes cc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
 }
 
-/* 6. Desktop Pointer Hover Gating (Prevents sticky mobile tap highlights) */
-@media (hover: hover) and (pointer: fine) {
-  .apple-circle-btn:hover {
-    background: #F4EFE6;
+@keyframes cc-fade {
+  from {
+    opacity: 0;
   }
-  .apple-timer-pill:hover {
-    background: #FAF7F2;
+}
+
+@keyframes cc-sheet {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
   }
-  .apple-pill-btn:hover {
-    color: #1C1E1D;
-    background: #F2EDE4;
+}
+
+@keyframes cc-rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
   }
-  .apple-clue-bar-toggle:hover {
-    color: #1C1E1D;
+}
+
+@keyframes cc-shake {
+  20%,
+  60% {
+    transform: translateX(-6px);
   }
-  .apple-stepper-btn:hover {
-    color: #1C1E1D;
+  40%,
+  80% {
+    transform: translateX(6px);
   }
-  .apple-clue-list-row:hover:not(.is-active) {
-    background: #FAF6EF;
+}
+
+@keyframes cc-ink {
+  40% {
+    background: var(--word);
   }
-  .apple-theme-tile:hover:not(.is-active) {
-    border-color: #CFC7B9;
-  }
-  .apple-action-btn:hover {
-    opacity: 0.95;
-  }
-  .apple-browse-link:hover {
-    color: #1C1E1D;
-  }
-  .apple-circle-close-btn:hover {
-    background: #E5DFC4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
