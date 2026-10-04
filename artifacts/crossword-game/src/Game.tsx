@@ -40,6 +40,7 @@ import {
   saveProgress,
 } from './storage';
 import { Archive } from './Archive';
+import { Keys } from './Keys';
 
 type Props = {
   puzzle: Puzzle;
@@ -78,7 +79,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const [newBest, setNewBest] = useState(false);
   const [shaking, setShaking] = useState(false);
   const [copied, setCopied] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const wasFull = useRef(puzzle.cells.every((c) => !!(saved?.letters ?? {})[keyFor(c.row, c.col)]));
 
   const solutionAt = useCallback((cell: Cell) => puzzle.rows[cell.row][cell.col], [puzzle]);
@@ -95,11 +95,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const orderedEntries = useMemo(() => [...puzzle.across, ...puzzle.down], [puzzle]);
   const assisted = revealed.size > 0;
   const playing = !completed && !paused;
-
-  const focusInput = () => {
-    // Defer so the tap that triggered this doesn't immediately steal focus back.
-    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-  };
 
   const begin = useCallback(() => setStarted(true), []);
 
@@ -161,7 +156,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
       begin();
     }
     setPanel('keyboard');
-    focusInput();
   };
 
   const moveBy = useCallback(
@@ -281,12 +275,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [modal, typeLetter, backspace, jumpEntry, toggleDirection, moveBy]);
 
-  const onNativeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value.length === 0) backspace();
-    else typeLetter(value.replace(/[^a-zA-Z]/g, '').slice(-1));
-  };
-
   // --- completion ---------------------------------------------------------
   useEffect(() => {
     if (completed) return;
@@ -325,7 +313,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
       return next;
     });
     setMenu(null);
-    focusInput();
   };
 
   const reveal = (cells: Cell[]) => {
@@ -346,7 +333,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     clearWrong(cells.map((c) => keyFor(c.row, c.col)));
     setMenu(null);
     begin();
-    focusInput();
   };
 
   const restart = () => {
@@ -365,7 +351,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     setSelected(puzzle.cells[0]);
     setDirection('across');
     wasFull.current = false;
-    focusInput();
   };
 
   // --- misc UI ------------------------------------------------------------
@@ -391,10 +376,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
       window.removeEventListener('resize', sync);
     };
   }, []);
-
-  useEffect(() => {
-    if (!modal && playing && panel === 'keyboard') focusInput();
-  }, [modal, playing, panel]);
 
   const share = async () => {
     const url = `${window.location.origin}${window.location.pathname}?p=${puzzle.id}`;
@@ -426,21 +407,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
 
   return (
     <main className="cc-shell">
-      <input
-        ref={inputRef}
-        className="cc-input-trap"
-        type="text"
-        inputMode="text"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        autoComplete="off"
-        spellCheck={false}
-        enterKeyHint="next"
-        aria-label="Type a letter"
-        value=" "
-        onChange={onNativeInput}
-      />
-
       <header className="cc-masthead">
         <button type="button" className="cc-wordmark" onClick={() => setModal('archive')} aria-label="Open the puzzle archive">
           Clue <em>&amp;</em> Co.
@@ -605,7 +571,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             toggleDirection();
-            focusInput();
           }}
           aria-label={`${activeEntry.number} ${activeEntry.direction}: ${activeEntry.clue}. Tap to switch direction.`}
         >
@@ -636,7 +601,6 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                         onClick={() => {
                           selectEntry(entry);
                           setPanel('keyboard');
-                          focusInput();
                         }}
                       >
                         <span className="cc-cluelist-num">{entry.number}</span>
@@ -649,6 +613,8 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
             </div>
           ))}
         </section>
+
+      {panel === 'keyboard' && <Keys onLetter={typeLetter} onBackspace={backspace} />}
 
       {modal === 'result' && (
         <div className="cc-scrim" role="dialog" aria-modal="true" aria-labelledby="cc-result-title" onClick={() => setModal(null)}>

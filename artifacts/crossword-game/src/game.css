@@ -125,22 +125,6 @@ kbd {
   text-align: center;
 }
 
-.cc-input-trap {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  border: 0;
-  padding: 0;
-  font-size: 16px; /* below 16px iOS zooms on focus */
-  color: transparent;
-  caret-color: transparent;
-  background: transparent;
-  pointer-events: none;
-}
-
 /* --- masthead ----------------------------------------------------------- */
 
 .cc-masthead {
@@ -482,6 +466,103 @@ kbd {
   font-weight: 500;
   line-height: 1.35;
   color: var(--text);
+}
+
+/* --- on-screen keyboard (touch devices) ------------------------------ */
+
+.cc-keys {
+  display: grid;
+  gap: 7px;
+  margin-top: auto;
+  padding: 10px 0 2px;
+  touch-action: none;
+}
+
+.cc-keys-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.cc-key {
+  flex: 0 1 calc((100% - 45px) / 10);
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  box-shadow: 0 1px 0 var(--rule);
+  font-family: var(--sans);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background-color 80ms linear, transform 80ms var(--ease-out);
+}
+
+.cc-key:active {
+  background: var(--ink);
+  color: var(--paper);
+  transform: scale(0.96);
+}
+
+.cc-key-wide {
+  flex-basis: calc((100% - 45px) / 10 * 1.5 + 5px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cc-keys {
+    display: none;
+  }
+}
+
+/* Phones: leave room for the keyboard so the whole game fits without scrolling. */
+@media (pointer: coarse) {
+  .cc-board {
+    width: min(100%, calc(var(--vv-height, 100dvh) - 410px));
+  }
+
+  .cc-board-wrap {
+    padding: 12px 0 10px;
+  }
+
+  .cc-cluebar {
+    min-height: 64px;
+  }
+
+  .cc-masthead,
+  .cc-dateline,
+  .cc-board-wrap,
+  .cc-cluebar,
+  .cc-keys {
+    flex-shrink: 0;
+  }
+}
+
+/* Short phones (iPhone SE, landscape-ish browsers): smaller keys and clue text so nothing overlaps. */
+@media (pointer: coarse) and (max-height: 700px) {
+  .cc-board {
+    width: min(100%, calc(var(--vv-height, 100dvh) - 372px));
+    min-width: 180px;
+  }
+
+  .cc-board-wrap {
+    padding: 8px 0;
+  }
+
+  .cc-cluebar-text {
+    font-size: 15px;
+  }
+
+  .cc-key {
+    height: 42px;
+    font-size: 17px;
+  }
+
+  .cc-keys {
+    gap: 6px;
+    padding-top: 8px;
+  }
 }
 
 /* --- clue list ---------------------------------------------------------- */
@@ -849,6 +930,12 @@ kbd {
     grid-column: 1;
     grid-row: 4;
     align-self: start;
+  }
+
+  .cc-keys {
+    grid-column: 1;
+    grid-row: 5;
+    max-width: 560px;
   }
 
   .cc-cluelist,
