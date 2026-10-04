@@ -2,6 +2,12 @@ import { useRef, useState } from 'react';
 
 // Temporary diagnostic page (?haptics-test). Isolates which iOS haptic route works on a real phone.
 // Remove once haptics are confirmed.
+const css = (rule: string): React.CSSProperties => {
+  const [prop, value] = rule.split(':');
+  const key = prop.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+  return { [key]: key === 'opacity' ? Number(value) : value } as React.CSSProperties;
+};
+
 export function HapticTest() {
   const visibleRef = useRef<HTMLInputElement>(null);
   const [log, setLog] = useState<string[]>([]);
@@ -39,6 +45,26 @@ export function HapticTest() {
       <button type="button" className="cc-btn" onClick={clickHidden}>
         C. Button that flips a hidden switch
       </button>
+
+      <label className="cc-key" style={{ position: 'relative', height: 56, flex: 'none', width: '100%' }}>
+        E. Fake key, switch opacity 0
+        <input
+          type="checkbox"
+          {...{ switch: '' }}
+          onChange={() => note('E: tapped')}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', margin: 0, ...css('opacity:0') }}
+        />
+      </label>
+
+      <label className="cc-key" style={{ position: 'relative', height: 56, flex: 'none', width: '100%' }}>
+        F. Fake key, switch nearly invisible (2%)
+        <input
+          type="checkbox"
+          {...{ switch: '' }}
+          onChange={() => note('F: tapped')}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', margin: 0, ...css('opacity:0.02') }}
+        />
+      </label>
 
       <button
         type="button"
