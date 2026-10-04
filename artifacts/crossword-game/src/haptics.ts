@@ -24,12 +24,13 @@ export function tapHaptic() {
   if (!iosToggle) {
     iosToggle = document.createElement('label');
     iosToggle.setAttribute('aria-hidden', 'true');
-    iosToggle.style.display = 'none';
+    // Rendered off-screen (not display:none) so the switch is a live, interactive control.
+    iosToggle.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.setAttribute('switch', '');
     iosToggle.appendChild(input);
-    document.head.appendChild(iosToggle);
+    document.body.appendChild(iosToggle);
   }
   iosToggle.click();
 }

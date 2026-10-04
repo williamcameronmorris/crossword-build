@@ -15,10 +15,11 @@ type Props = {
  * desktops with a real keyboard (see .cc-keys in game.css).
  */
 export const Keys = memo(function Keys({ onLetter, onBackspace }: Props) {
-  // pointerdown fires on touch without the click delay; preventDefault stops focus and text selection.
+  // Letters go in on pointerdown (no tap delay). The haptic fires on click instead: browsers only
+  // allow vibration and the iOS switch trick inside a real user activation, and on touch screens
+  // pointerdown doesn't count as one; the click that follows the touch does.
   const press = (action: () => void) => (e: React.PointerEvent) => {
     e.preventDefault();
-    tapHaptic();
     action();
   };
 
@@ -27,12 +28,12 @@ export const Keys = memo(function Keys({ onLetter, onBackspace }: Props) {
       {ROWS.map((row, i) => (
         <div key={row} className="cc-keys-row">
           {row.split('').map((letter) => (
-            <button key={letter} type="button" className="cc-key" onPointerDown={press(() => onLetter(letter))} aria-label={letter}>
+            <button key={letter} type="button" className="cc-key" onPointerDown={press(() => onLetter(letter))} onClick={tapHaptic} aria-label={letter}>
               {letter}
             </button>
           ))}
           {i === ROWS.length - 1 && (
-            <button type="button" className="cc-key cc-key-wide" onPointerDown={press(onBackspace)} aria-label="Delete">
+            <button type="button" className="cc-key cc-key-wide" onPointerDown={press(onBackspace)} onClick={tapHaptic} aria-label="Delete">
               <Backspace size={22} weight="bold" />
             </button>
           )}
