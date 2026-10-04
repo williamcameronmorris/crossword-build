@@ -17,6 +17,7 @@ import {
   SpeakerHigh,
   SpeakerSlash,
   SquaresFour,
+  Vibrate,
   X,
 } from '@phosphor-icons/react';
 import {
@@ -29,6 +30,7 @@ import {
   setSoundEnabled,
 } from './audio';
 import { fireConfetti } from './confetti';
+import { getHapticsEnabled, setHapticsEnabled } from './haptics';
 import { type Cell, type Direction, type Entry, type Puzzle, keyFor, sameCell } from './puzzles';
 import {
   clearProgress,
@@ -74,6 +76,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const [menu, setMenu] = useState<'assist' | 'more' | null>(null);
   const [modal, setModal] = useState<'archive' | 'help' | 'result' | null>(() => (saved?.completed ? 'result' : null));
   const [soundOn, setSoundOn] = useState(getSoundEnabled);
+  const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled);
   const [streak, setStreak] = useState(currentStreak);
   const [best, setBest] = useState(() => loadBest(puzzle.id));
   const [newBest, setNewBest] = useState(false);
@@ -487,6 +490,18 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                 <button type="button" role="menuitem" onClick={toggleSound}>
                   {soundOn ? <SpeakerHigh size={16} weight="bold" /> : <SpeakerSlash size={16} weight="bold" />}
                   Sound {soundOn ? 'on' : 'off'}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="cc-touch-only"
+                  onClick={() => {
+                    setHapticsEnabled(!hapticsOn);
+                    setHapticsOn(!hapticsOn);
+                    setMenu(null);
+                  }}
+                >
+                  <Vibrate size={16} weight="bold" /> Haptics {hapticsOn ? 'on' : 'off'}
                 </button>
                 <button type="button" role="menuitem" onClick={() => { setModal('help'); setMenu(null); }}>
                   <Question size={16} weight="bold" /> How to play

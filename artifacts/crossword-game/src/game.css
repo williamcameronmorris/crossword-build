@@ -511,7 +511,8 @@ kbd {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .cc-keys {
+  .cc-keys,
+  .cc-menu .cc-touch-only {
     display: none;
   }
 }

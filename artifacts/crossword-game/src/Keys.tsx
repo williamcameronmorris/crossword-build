@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Backspace } from '@phosphor-icons/react';
+import { tapHaptic } from './haptics';
 
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
@@ -17,6 +18,7 @@ export const Keys = memo(function Keys({ onLetter, onBackspace }: Props) {
   // pointerdown fires on touch without the click delay; preventDefault stops focus and text selection.
   const press = (action: () => void) => (e: React.PointerEvent) => {
     e.preventDefault();
+    tapHaptic();
     action();
   };
 
