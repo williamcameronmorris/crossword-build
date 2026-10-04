@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Game } from './Game';
-import { HapticTest } from './HapticTest';
 import { type Puzzle, dailyPuzzleId, loadBankIndex, loadPuzzle, prefetchPuzzle } from './puzzles';
 
 type State =
@@ -47,8 +46,6 @@ export default function App() {
     },
     [open],
   );
-
-  if (new URLSearchParams(window.location.search).has('haptics-test')) return <HapticTest />;
 
   if (state.status === 'loading') {
     return (

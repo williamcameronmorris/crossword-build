@@ -1,12 +1,13 @@
 import { readFlag, writeFlag } from './storage';
 
-// A light tap for each key press.
-// Android: navigator.vibrate. iOS Safari has no vibrate API, but toggling a hidden
-// <input switch> (iOS 18+) plays the system's selection haptic, so we click one.
+// Key-press haptics.
+// iOS: Safari has no vibrate API, but it plays the system tick when a finger toggles an
+// <input switch>. Programmatic clicks don't count (tested on iOS 27), so each on-screen key
+// carries an invisible switch the finger actually lands on (see Keys.tsx).
+// Android: navigator.vibrate, called from that same switch's change event.
 
 const KEY = 'clue_co_haptics_enabled';
 let enabled = readFlag(KEY, true);
-let iosToggle: HTMLLabelElement | null = null;
 
 export const getHapticsEnabled = () => enabled;
 
@@ -15,22 +16,6 @@ export function setHapticsEnabled(next: boolean) {
   writeFlag(KEY, next);
 }
 
-export function tapHaptic() {
-  if (!enabled) return;
-  if (typeof navigator.vibrate === 'function') {
-    navigator.vibrate(8);
-    return;
-  }
-  if (!iosToggle) {
-    iosToggle = document.createElement('label');
-    iosToggle.setAttribute('aria-hidden', 'true');
-    // Rendered off-screen (not display:none) so the switch is a live, interactive control.
-    iosToggle.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.setAttribute('switch', '');
-    iosToggle.appendChild(input);
-    document.body.appendChild(iosToggle);
-  }
-  iosToggle.click();
+export function vibrateTick() {
+  if (enabled && typeof navigator.vibrate === 'function') navigator.vibrate(8);
 }

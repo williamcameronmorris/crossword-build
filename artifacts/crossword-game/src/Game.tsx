@@ -636,7 +636,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
           ))}
         </section>
 
-      {panel === 'keyboard' && <Keys onLetter={typeLetter} onBackspace={backspace} />}
+      {panel === 'keyboard' && <Keys onLetter={typeLetter} onBackspace={backspace} haptics={hapticsOn} />}
 
       {modal === 'result' && (
         <div className="cc-scrim" role="dialog" aria-modal="true" aria-labelledby="cc-result-title" onClick={() => setModal(null)}>
