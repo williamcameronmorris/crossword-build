@@ -134,11 +134,21 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
 
   const jumpEntry = useCallback(
     (delta: 1 | -1) => {
+      // Skip words that are already filled; fall back to plain next/previous once everything is.
       const i = orderedEntries.indexOf(activeEntry);
-      const next = orderedEntries[(i + delta + orderedEntries.length) % orderedEntries.length];
+      const n = orderedEntries.length;
+      const at = (step: number) => orderedEntries[(((i + delta * step) % n) + n) % n];
+      const isOpen = (e: Entry) => e.cells.some((c) => !letters[keyFor(c.row, c.col)]);
+      let next = at(1);
+      for (let step = 1; step < n; step += 1) {
+        if (isOpen(at(step))) {
+          next = at(step);
+          break;
+        }
+      }
       selectEntry(next);
     },
-    [orderedEntries, activeEntry, selectEntry],
+    [orderedEntries, activeEntry, selectEntry, letters],
   );
 
   const toggleDirection = useCallback(() => {
