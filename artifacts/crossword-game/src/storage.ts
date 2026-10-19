@@ -23,8 +23,10 @@ export type SavedProgress = {
   revealed: string[];
   seconds: number;
   completed: boolean;
-  /** Checks and reveals used. Any reveal makes a solve "assisted": no best time, no streak. */
+  /** Checks, hints and reveals used. Only a reveal makes a solve "assisted": no record, streak reset. */
   hints: number;
+  /** Entries whose second clue has been shown, e.g. "a1", "d4". */
+  hinted: string[];
 };
 
 const progressKey = (id: number) => `clue_co_save_${id}`;
@@ -41,6 +43,7 @@ export function loadProgress(id: number): SavedProgress | null {
       seconds: typeof data.seconds === 'number' ? data.seconds : 0,
       completed: !!data.completed,
       hints: typeof data.hints === 'number' ? data.hints : 0,
+      hinted: Array.isArray(data.hinted) ? data.hinted : [],
     };
   } catch {
     return null;

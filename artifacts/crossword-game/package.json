@@ -8,7 +8,8 @@
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "generate": "node tools/generate-puzzles.mjs 500 1"
+    "generate": "node tools/generate-puzzles.mjs 500 1 && node tools/add-hints.mjs",
+    "hints": "node tools/add-hints.mjs"
   },
   "devDependencies": {
     "@fontsource/geist": "^5.3.0",

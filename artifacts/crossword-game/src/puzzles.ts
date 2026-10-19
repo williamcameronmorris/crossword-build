@@ -1,9 +1,19 @@
 export type Direction = 'across' | 'down';
 export type Cell = { row: number; col: number };
-export type Entry = { number: number; direction: Direction; answer: string; clue: string; cells: Cell[] };
+export type Entry = {
+  number: number;
+  direction: Direction;
+  answer: string;
+  clue: string;
+  /** A second clue from a different angle, shown only when the player asks for a hint. */
+  hint?: string;
+  cells: Cell[];
+};
+
+export const entryKey = (e: Pick<Entry, 'number' | 'direction'>) => `${e.direction[0]}${e.number}`;
 
 /** Shape of a puzzle as stored in public/puzzles/*.json (see tools/generate-puzzles.mjs). */
-type RawPuzzle = { id: number; rows: string[]; across: string[]; down: string[] };
+type RawPuzzle = { id: number; rows: string[]; across: string[]; down: string[]; acrossHints?: (string | null)[]; downHints?: (string | null)[] };
 
 export type Puzzle = {
   id: number;
@@ -46,9 +56,9 @@ function buildPuzzle(raw: RawPuzzle): Puzzle {
       const startsDown = !open(r - 1, c) && open(r + 1, c);
       if (!startsAcross && !startsDown) continue;
       cellNumbers[keyFor(r, c)] = number;
-      for (const [direction, list, clues, dr, dc] of [
-        ['across', across, raw.across, 0, 1],
-        ['down', down, raw.down, 1, 0],
+      for (const [direction, list, clues, hints, dr, dc] of [
+        ['across', across, raw.across, raw.acrossHints, 0, 1],
+        ['down', down, raw.down, raw.downHints, 1, 0],
       ] as const) {
         if (direction === 'across' ? !startsAcross : !startsDown) continue;
         const entryCells = run(r, c, dr, dc);
@@ -58,6 +68,7 @@ function buildPuzzle(raw: RawPuzzle): Puzzle {
           cells: entryCells,
           answer: entryCells.map((cell) => rows[cell.row][cell.col]).join(''),
           clue: clues[list.length] ?? '',
+          hint: hints?.[list.length] ?? undefined,
         });
       }
       number += 1;
