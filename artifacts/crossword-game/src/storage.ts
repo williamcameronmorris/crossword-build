@@ -155,6 +155,19 @@ export function recordSolveForStreak(): number {
   return count;
 }
 
+// --- solve streak: consecutive puzzles finished without a reveal ---
+
+export function currentSolveStreak(): number {
+  return Number.parseInt(read('clue_co_solve_streak') ?? '0', 10) || 0;
+}
+
+/** Clean solve extends the run; a solve with reveals ends it. Returns the new count. */
+export function recordSolveStreak(clean: boolean): number {
+  const next = clean ? currentSolveStreak() + 1 : 0;
+  write('clue_co_solve_streak', String(next));
+  return next;
+}
+
 export function readFlag(key: string, fallback: boolean) {
   const raw = read(key);
   return raw === null ? fallback : raw === 'true';

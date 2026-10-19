@@ -729,7 +729,7 @@ kbd {
 
 .cc-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   margin: 24px 0;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
@@ -739,25 +739,14 @@ kbd {
   padding: 14px 0;
 }
 
-.cc-stats div + div {
+/* Three across, two rows: rules between columns and between the rows. */
+.cc-stats div:not(:nth-child(3n + 1)) {
   padding-left: 14px;
   border-left: 1px solid var(--rule);
 }
 
-/* Two by two on phones so the numbers stay large. */
-@media (max-width: 480px) {
-  .cc-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .cc-stats div:nth-child(3) {
-    padding-left: 0;
-    border-left: 0;
-  }
-
-  .cc-stats div:nth-child(n + 3) {
-    border-top: 1px solid var(--rule);
-  }
+.cc-stats div:nth-child(n + 4) {
+  border-top: 1px solid var(--rule);
 }
 
 .cc-stats dt {
@@ -771,7 +760,7 @@ kbd {
 .cc-stats dd {
   margin: 4px 0 0;
   font-family: var(--mono);
-  font-size: 22px;
+  font-size: clamp(18px, 5.4vw, 22px);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -1046,5 +1035,23 @@ kbd {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Narrow phones (iPhone SE): keep stat labels and buttons on one line. */
+@media (max-width: 359px) {
+  .cc-stats dt {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .cc-stats div:not(:nth-child(3n + 1)) {
+    padding-left: 10px;
+  }
+
+  .cc-sheet-actions .cc-btn {
+    padding: 0 12px;
+    white-space: nowrap;
   }
 }

@@ -34,6 +34,7 @@ import { getHapticsEnabled, setHapticsEnabled } from './haptics';
 import { type Cell, type Direction, type Entry, type Puzzle, keyFor, sameCell } from './puzzles';
 import {
   clearProgress,
+  currentSolveStreak,
   currentStreak,
   loadStats,
   loadProgress,
@@ -41,6 +42,7 @@ import {
   scanArchive,
   pickNextPuzzle,
   recordSolveForStreak,
+  recordSolveStreak,
   saveProgress,
 } from './storage';
 import { Archive } from './Archive';
@@ -80,6 +82,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const [soundOn, setSoundOn] = useState(getSoundEnabled);
   const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled);
   const [streak, setStreak] = useState(currentStreak);
+  const [solveStreak, setSolveStreak] = useState(currentSolveStreak);
   // Records are career-wide (across all puzzles); each puzzle is only solved once, so a
   // per-puzzle best would call every first solve a "new best".
   const [stats, setStats] = useState(loadStats);
@@ -306,6 +309,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
       setMenu(null);
       playVictoryFanfare();
       fireConfetti();
+      setSolveStreak(recordSolveStreak(!assisted));
       if (!assisted) {
         setStreak(recordSolveForStreak());
         const before = loadStats();
@@ -669,11 +673,11 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
             </h2>
             <p className="cc-sheet-sub">
               {assisted
-                ? 'Revealed squares keep this one off your record. Try a fresh one.'
+                ? 'Revealed squares keep this one off your record and restart your solve streak.'
                 : newRecord
                   ? 'Your fastest solve yet.'
                   : hints === 0
-                  ? `Clean solve.${stats.average !== null ? ` Your average is ${formatTime(stats.average)}.` : ''}`
+                  ? 'Clean solve. No checks, no reveals.'
                   : `Solved with ${hints} ${hints === 1 ? 'check' : 'checks'}.`}
             </p>
             <dl className="cc-stats">
@@ -686,8 +690,16 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                 <dd>{stats.fastest !== null ? formatTime(stats.fastest) : '--'}</dd>
               </div>
               <div>
+                <dt>Average</dt>
+                <dd>{stats.average !== null ? formatTime(stats.average) : '--'}</dd>
+              </div>
+              <div>
                 <dt>Day streak</dt>
                 <dd>{streak}</dd>
+              </div>
+              <div>
+                <dt>Solve streak</dt>
+                <dd>{solveStreak}</dd>
               </div>
               <div>
                 <dt>Solved</dt>
@@ -746,11 +758,11 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
               </div>
               <div>
                 <dt>Stuck?</dt>
-                <dd>The light bulb checks or reveals a square, word or puzzle. Reveals keep a solve off your streak and best time.</dd>
+                <dd>The light bulb checks or reveals a square, word or puzzle. Reveals keep a solve off your records and restart your solve streak.</dd>
               </div>
               <div>
                 <dt>One a day</dt>
-                <dd>A new puzzle every day, and {count} in the archive. Solve at least one a day to build your streak.</dd>
+                <dd>A new puzzle every day, and {count} in the archive. Solve one a day to grow your day streak; every clean solve in a row grows your solve streak.</dd>
               </div>
             </dl>
             <button type="button" className="cc-btn cc-btn-wide" onClick={() => setModal(null)}>
