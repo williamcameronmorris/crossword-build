@@ -461,6 +461,23 @@ kbd {
   color: var(--accent);
 }
 
+.cc-cluebar-hint,
+.cc-cluelist-hint {
+  display: block;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--accent);
+}
+
+.cc-cluelist-hint {
+  margin-top: 2px;
+}
+
+.cc-menu button:disabled {
+  opacity: 0.45;
+}
+
 .cc-cluebar-text {
   font-size: 17px;
   font-weight: 500;

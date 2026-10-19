@@ -7,7 +7,8 @@ A daily 5x5 mini crossword with an archive of 500 puzzles. Static Vite + React a
 - `pnpm dev` — local dev server
 - `pnpm build` — production build to `artifacts/crossword-game/dist/public`
 - `pnpm typecheck` — TypeScript check
-- `pnpm generate` — rebuild the puzzle bank (~2 min for 500 puzzles)
+- `pnpm generate` — rebuild the puzzle bank (~2 min for 500 puzzles), then attach hints
+- `pnpm --filter @workspace/crossword-game run hints` — re-attach hints from `tools/hints.jsonl` without touching grids
 
 ## Where things live
 
@@ -15,7 +16,7 @@ A daily 5x5 mini crossword with an archive of 500 puzzles. Static Vite + React a
 - `artifacts/crossword-game/src/puzzles.ts` — puzzle numbering, chunked loading, daily puzzle by date
 - `artifacts/crossword-game/src/storage.ts` — saved progress, best times, day streak (localStorage)
 - `artifacts/crossword-game/src/game.css` — all styles; color tokens at the top
-- `artifacts/crossword-game/tools/` — puzzle generator, clued word bank, handmade puzzles
+- `artifacts/crossword-game/tools/` — puzzle generator, clued word bank, hint bank (`hints.jsonl`), handmade puzzles
 - `artifacts/crossword-game/public/puzzles/` — generated bank, 100 puzzles per JSON chunk
 
 ## Architecture decisions

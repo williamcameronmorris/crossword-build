@@ -31,7 +31,7 @@ import {
 } from './audio';
 import { fireConfetti } from './confetti';
 import { getHapticsEnabled, setHapticsEnabled } from './haptics';
-import { type Cell, type Direction, type Entry, type Puzzle, keyFor, sameCell } from './puzzles';
+import { type Cell, type Direction, type Entry, type Puzzle, entryKey, keyFor, sameCell } from './puzzles';
 import {
   clearProgress,
   currentSolveStreak,
@@ -71,6 +71,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const [wrong, setWrong] = useState<Set<string>>(new Set());
   const [seconds, setSeconds] = useState(() => saved?.seconds ?? 0);
   const [hints, setHints] = useState(() => saved?.hints ?? 0);
+  const [hinted, setHinted] = useState<Set<string>>(() => new Set(saved?.hinted ?? []));
   const [completed, setCompleted] = useState(() => saved?.completed ?? false);
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -127,8 +128,8 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   // --- persistence -------------------------------------------------------
   useEffect(() => {
     if (!started && !completed && Object.keys(letters).length === 0) return;
-    saveProgress(puzzle.id, { letters, revealed: [...revealed], seconds, completed, hints });
-  }, [puzzle.id, letters, revealed, seconds, completed, hints, started]);
+    saveProgress(puzzle.id, { letters, revealed: [...revealed], seconds, completed, hints, hinted: [...hinted] });
+  }, [puzzle.id, letters, revealed, seconds, completed, hints, hinted, started]);
 
   // --- navigation -------------------------------------------------------
   const selectEntry = useCallback((entry: Entry, cell?: Cell) => {
@@ -338,6 +339,15 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     setMenu(null);
   };
 
+  const activeHinted = hinted.has(entryKey(activeEntry));
+  const showHint = () => {
+    if (!activeEntry.hint || activeHinted) return;
+    setHints((h) => h + 1);
+    setHinted((current) => new Set(current).add(entryKey(activeEntry)));
+    setMenu(null);
+    begin();
+  };
+
   const reveal = (cells: Cell[]) => {
     setHints((h) => h + 1);
     setLetters((current) => {
@@ -365,6 +375,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     setWrong(new Set());
     setSeconds(0);
     setHints(0);
+    setHinted(new Set());
     setCompleted(false);
     setStarted(false);
     setPaused(false);
@@ -472,6 +483,10 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
             </button>
             {menu === 'assist' && (
               <div className="cc-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+                <p className="cc-menu-label">Hint</p>
+                <button type="button" role="menuitem" onClick={showHint} disabled={!activeEntry.hint || activeHinted}>
+                  <Lightbulb size={16} weight="bold" /> {activeHinted ? 'Hint shown below the clue' : 'Second clue for this word'}
+                </button>
                 <p className="cc-menu-label">Check</p>
                 <button type="button" role="menuitem" onClick={() => check([selected])}>
                   <Check size={16} weight="bold" /> Square
@@ -623,6 +638,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
             {activeEntry.number} {activeEntry.direction}
           </span>
           <span className="cc-cluebar-text">{activeEntry.clue}</span>
+          {activeHinted && activeEntry.hint && <span className="cc-cluebar-hint">Hint: {activeEntry.hint}</span>}
         </button>
         <button type="button" className="cc-step" onMouseDown={(e) => e.preventDefault()} onClick={() => jumpEntry(1)} aria-label="Next clue">
           <CaretRight size={18} weight="bold" />
@@ -649,7 +665,10 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                         }}
                       >
                         <span className="cc-cluelist-num">{entry.number}</span>
-                        <span>{entry.clue}</span>
+                        <span>
+                          {entry.clue}
+                          {hinted.has(entryKey(entry)) && entry.hint && <span className="cc-cluelist-hint">Hint: {entry.hint}</span>}
+                        </span>
                       </button>
                     </li>
                   );
@@ -678,7 +697,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                   ? 'Your fastest solve yet.'
                   : hints === 0
                   ? 'Clean solve. No checks, no reveals.'
-                  : `Solved with ${hints} ${hints === 1 ? 'check' : 'checks'}.`}
+                  : `Solved with ${hints} ${hints === 1 ? 'hint or check' : 'hints or checks'}.`}
             </p>
             <dl className="cc-stats">
               <div>
@@ -758,7 +777,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
               </div>
               <div>
                 <dt>Stuck?</dt>
-                <dd>The light bulb checks or reveals a square, word or puzzle. Reveals keep a solve off your records and restart your solve streak.</dd>
+                <dd>The light bulb gives a second clue for the current word, or checks or reveals a square, word or puzzle. Reveals keep a solve off your records and restart your solve streak.</dd>
               </div>
               <div>
                 <dt>One a day</dt>
