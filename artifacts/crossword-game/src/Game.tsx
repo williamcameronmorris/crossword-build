@@ -34,12 +34,15 @@ import { getHapticsEnabled, setHapticsEnabled } from './haptics';
 import { type Cell, type Direction, type Entry, type Puzzle, keyFor, sameCell } from './puzzles';
 import {
   clearProgress,
+  currentSolveStreak,
   currentStreak,
-  loadBest,
+  loadStats,
   loadProgress,
   recordBest,
+  scanArchive,
   pickNextPuzzle,
   recordSolveForStreak,
+  recordSolveStreak,
   saveProgress,
 } from './storage';
 import { Archive } from './Archive';
@@ -79,8 +82,12 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const [soundOn, setSoundOn] = useState(getSoundEnabled);
   const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled);
   const [streak, setStreak] = useState(currentStreak);
-  const [best, setBest] = useState(() => loadBest(puzzle.id));
-  const [newBest, setNewBest] = useState(false);
+  const [solveStreak, setSolveStreak] = useState(currentSolveStreak);
+  // Records are career-wide (across all puzzles); each puzzle is only solved once, so a
+  // per-puzzle best would call every first solve a "new best".
+  const [stats, setStats] = useState(loadStats);
+  const [solvedCount, setSolvedCount] = useState(() => scanArchive().solved.size);
+  const [newRecord, setNewRecord] = useState(false);
   const [shaking, setShaking] = useState(false);
   const [copied, setCopied] = useState(false);
   const wasFull = useRef(puzzle.cells.every((c) => !!(saved?.letters ?? {})[keyFor(c.row, c.col)]));
@@ -134,11 +141,21 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
 
   const jumpEntry = useCallback(
     (delta: 1 | -1) => {
+      // Skip words that are already filled; fall back to plain next/previous once everything is.
       const i = orderedEntries.indexOf(activeEntry);
-      const next = orderedEntries[(i + delta + orderedEntries.length) % orderedEntries.length];
+      const n = orderedEntries.length;
+      const at = (step: number) => orderedEntries[(((i + delta * step) % n) + n) % n];
+      const isOpen = (e: Entry) => e.cells.some((c) => !letters[keyFor(c.row, c.col)]);
+      let next = at(1);
+      for (let step = 1; step < n; step += 1) {
+        if (isOpen(at(step))) {
+          next = at(step);
+          break;
+        }
+      }
       selectEntry(next);
     },
-    [orderedEntries, activeEntry, selectEntry],
+    [orderedEntries, activeEntry, selectEntry, letters],
   );
 
   const toggleDirection = useCallback(() => {
@@ -292,11 +309,13 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
       setMenu(null);
       playVictoryFanfare();
       fireConfetti();
+      setSolveStreak(recordSolveStreak(!assisted));
       if (!assisted) {
         setStreak(recordSolveForStreak());
-        const beat = recordBest(puzzle.id, seconds);
-        setNewBest(beat);
-        setBest(loadBest(puzzle.id));
+        const before = loadStats();
+        recordBest(puzzle.id, seconds);
+        setNewRecord(before.fastest !== null && seconds < before.fastest);
+        setStats(loadStats());
       }
       window.setTimeout(() => setModal('result'), 650);
     } else if (justFilled) {
@@ -349,7 +368,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     setCompleted(false);
     setStarted(false);
     setPaused(false);
-    setNewBest(false);
+    setNewRecord(false);
     setModal(null);
     setMenu(null);
     setSelected(puzzle.cells[0]);
@@ -406,6 +425,10 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   };
 
   // Picked fresh each time the result sheet opens, so you never get sent to a puzzle you've solved.
+  useEffect(() => {
+    if (modal === 'result') setSolvedCount(scanArchive().solved.size);
+  }, [modal]);
+
   const nextId = useMemo(
     () => (modal === 'result' ? pickNextPuzzle(count, puzzle.id, dailyId) : null),
     [modal, count, puzzle.id, dailyId],
@@ -646,12 +669,14 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
             </button>
             <p className="cc-eyebrow">{puzzleLabel(puzzle.id)}</p>
             <h2 id="cc-result-title" className="cc-sheet-title">
-              {assisted ? 'Finished.' : newBest ? 'New best.' : 'Solved.'}
+              {assisted ? 'Finished.' : newRecord ? 'New record.' : 'Solved.'}
             </h2>
             <p className="cc-sheet-sub">
               {assisted
-                ? 'Revealed squares keep this one off your record. Try a fresh one.'
-                : hints === 0
+                ? 'Revealed squares keep this one off your record and restart your solve streak.'
+                : newRecord
+                  ? 'Your fastest solve yet.'
+                  : hints === 0
                   ? 'Clean solve. No checks, no reveals.'
                   : `Solved with ${hints} ${hints === 1 ? 'check' : 'checks'}.`}
             </p>
@@ -661,14 +686,24 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                 <dd>{formatTime(seconds)}</dd>
               </div>
               <div>
-                <dt>Best</dt>
-                <dd>{best !== null ? formatTime(best) : '--'}</dd>
+                <dt>Fastest</dt>
+                <dd>{stats.fastest !== null ? formatTime(stats.fastest) : '--'}</dd>
               </div>
               <div>
-                <dt>Streak</dt>
-                <dd>
-                  {streak} {streak === 1 ? 'day' : 'days'}
-                </dd>
+                <dt>Average</dt>
+                <dd>{stats.average !== null ? formatTime(stats.average) : '--'}</dd>
+              </div>
+              <div>
+                <dt>Day streak</dt>
+                <dd>{streak}</dd>
+              </div>
+              <div>
+                <dt>Solve streak</dt>
+                <dd>{solveStreak}</dd>
+              </div>
+              <div>
+                <dt>Solved</dt>
+                <dd>{solvedCount}</dd>
               </div>
             </dl>
             <div className="cc-sheet-actions">
@@ -723,11 +758,11 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
               </div>
               <div>
                 <dt>Stuck?</dt>
-                <dd>The light bulb checks or reveals a square, word or puzzle. Reveals keep a solve off your streak and best time.</dd>
+                <dd>The light bulb checks or reveals a square, word or puzzle. Reveals keep a solve off your records and restart your solve streak.</dd>
               </div>
               <div>
                 <dt>One a day</dt>
-                <dd>A new puzzle every day, and {count} in the archive. Solve at least one a day to build your streak.</dd>
+                <dd>A new puzzle every day, and {count} in the archive. Solve one a day to grow your day streak; every clean solve in a row grows your solve streak.</dd>
               </div>
             </dl>
             <button type="button" className="cc-btn cc-btn-wide" onClick={() => setModal(null)}>
