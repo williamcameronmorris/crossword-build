@@ -729,7 +729,7 @@ kbd {
 
 .cc-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   margin: 24px 0;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
@@ -742,6 +742,22 @@ kbd {
 .cc-stats div + div {
   padding-left: 14px;
   border-left: 1px solid var(--rule);
+}
+
+/* Two by two on phones so the numbers stay large. */
+@media (max-width: 480px) {
+  .cc-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cc-stats div:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .cc-stats div:nth-child(n + 3) {
+    border-top: 1px solid var(--rule);
+  }
 }
 
 .cc-stats dt {

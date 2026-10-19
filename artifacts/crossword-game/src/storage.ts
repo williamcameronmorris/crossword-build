@@ -68,6 +68,27 @@ export function recordBest(id: number, seconds: number): boolean {
   return true;
 }
 
+/** Career numbers across every puzzle: fastest and average clean solve, and how many. */
+export function loadStats(): { fastest: number | null; average: number | null; cleanSolves: number } {
+  const times: number[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('clue_co_best_')) continue;
+      const t = Number.parseInt(localStorage.getItem(key) ?? '', 10);
+      if (Number.isFinite(t)) times.push(t);
+    }
+  } catch {
+    /* storage unavailable */
+  }
+  if (!times.length) return { fastest: null, average: null, cleanSolves: 0 };
+  return {
+    fastest: Math.min(...times),
+    average: Math.round(times.reduce((a, b) => a + b, 0) / times.length),
+    cleanSolves: times.length,
+  };
+}
+
 /** Puzzle ids with saved progress, split by solved and started. Read once when the archive opens. */
 export function scanArchive(): { solved: Set<number>; started: Set<number> } {
   const solved = new Set<number>();

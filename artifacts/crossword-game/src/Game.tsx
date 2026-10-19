@@ -35,9 +35,10 @@ import { type Cell, type Direction, type Entry, type Puzzle, keyFor, sameCell } 
 import {
   clearProgress,
   currentStreak,
-  loadBest,
+  loadStats,
   loadProgress,
   recordBest,
+  scanArchive,
   pickNextPuzzle,
   recordSolveForStreak,
   saveProgress,
@@ -79,8 +80,11 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   const [soundOn, setSoundOn] = useState(getSoundEnabled);
   const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled);
   const [streak, setStreak] = useState(currentStreak);
-  const [best, setBest] = useState(() => loadBest(puzzle.id));
-  const [newBest, setNewBest] = useState(false);
+  // Records are career-wide (across all puzzles); each puzzle is only solved once, so a
+  // per-puzzle best would call every first solve a "new best".
+  const [stats, setStats] = useState(loadStats);
+  const [solvedCount, setSolvedCount] = useState(() => scanArchive().solved.size);
+  const [newRecord, setNewRecord] = useState(false);
   const [shaking, setShaking] = useState(false);
   const [copied, setCopied] = useState(false);
   const wasFull = useRef(puzzle.cells.every((c) => !!(saved?.letters ?? {})[keyFor(c.row, c.col)]));
@@ -304,9 +308,10 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
       fireConfetti();
       if (!assisted) {
         setStreak(recordSolveForStreak());
-        const beat = recordBest(puzzle.id, seconds);
-        setNewBest(beat);
-        setBest(loadBest(puzzle.id));
+        const before = loadStats();
+        recordBest(puzzle.id, seconds);
+        setNewRecord(before.fastest !== null && seconds < before.fastest);
+        setStats(loadStats());
       }
       window.setTimeout(() => setModal('result'), 650);
     } else if (justFilled) {
@@ -359,7 +364,7 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
     setCompleted(false);
     setStarted(false);
     setPaused(false);
-    setNewBest(false);
+    setNewRecord(false);
     setModal(null);
     setMenu(null);
     setSelected(puzzle.cells[0]);
@@ -416,6 +421,10 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   };
 
   // Picked fresh each time the result sheet opens, so you never get sent to a puzzle you've solved.
+  useEffect(() => {
+    if (modal === 'result') setSolvedCount(scanArchive().solved.size);
+  }, [modal]);
+
   const nextId = useMemo(
     () => (modal === 'result' ? pickNextPuzzle(count, puzzle.id, dailyId) : null),
     [modal, count, puzzle.id, dailyId],
@@ -656,13 +665,15 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
             </button>
             <p className="cc-eyebrow">{puzzleLabel(puzzle.id)}</p>
             <h2 id="cc-result-title" className="cc-sheet-title">
-              {assisted ? 'Finished.' : newBest ? 'New best.' : 'Solved.'}
+              {assisted ? 'Finished.' : newRecord ? 'New record.' : 'Solved.'}
             </h2>
             <p className="cc-sheet-sub">
               {assisted
                 ? 'Revealed squares keep this one off your record. Try a fresh one.'
-                : hints === 0
-                  ? 'Clean solve. No checks, no reveals.'
+                : newRecord
+                  ? 'Your fastest solve yet.'
+                  : hints === 0
+                  ? `Clean solve.${stats.average !== null ? ` Your average is ${formatTime(stats.average)}.` : ''}`
                   : `Solved with ${hints} ${hints === 1 ? 'check' : 'checks'}.`}
             </p>
             <dl className="cc-stats">
@@ -671,14 +682,16 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
                 <dd>{formatTime(seconds)}</dd>
               </div>
               <div>
-                <dt>Best</dt>
-                <dd>{best !== null ? formatTime(best) : '--'}</dd>
+                <dt>Fastest</dt>
+                <dd>{stats.fastest !== null ? formatTime(stats.fastest) : '--'}</dd>
               </div>
               <div>
-                <dt>Streak</dt>
-                <dd>
-                  {streak} {streak === 1 ? 'day' : 'days'}
-                </dd>
+                <dt>Day streak</dt>
+                <dd>{streak}</dd>
+              </div>
+              <div>
+                <dt>Solved</dt>
+                <dd>{solvedCount}</dd>
               </div>
             </dl>
             <div className="cc-sheet-actions">
