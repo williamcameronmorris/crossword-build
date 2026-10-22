@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 // Builds the puzzle bank served from public/puzzles/.
 //
-//   node tools/generate-puzzles.mjs [count=500] [seed=1]
+//   node tools/generate-puzzles.mjs [count=500] [seed=1] [freeze=30] [maxUses=2]
+//
+// The first `freeze` puzzles of the current bank are kept exactly as they are (players may have
+// solved them); everything after is rebuilt. Every answer appears at most `maxUses` times across
+// the whole bank, and repeated answers rotate through their clues so a clue isn't reused.
 //
 // Reads tools/wordbank.jsonl ({"w":"BASIL","c":["clue","clue"]} per line) and
 // tools/handmade.json (puzzles written by hand, kept first in the bank), fills
@@ -15,6 +19,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, '..', 'public', 'puzzles');
 const COUNT = Number(process.argv[2] ?? 500);
 const SEED = Number(process.argv[3] ?? 1);
+const FREEZE = Number(process.argv[4] ?? 30);
+let MAX_USES = Number(process.argv[5] ?? 2);
 const CHUNK = 100;
 const N = 5;
 
@@ -121,7 +127,7 @@ for (const [len, words] of byLength) {
 }
 
 const usage = new Map();
-const MAX_USES = { 3: 6, 4: 4, 5: 3 };
+const clueUsage = new Map(); // "WORD|clue" -> times used
 
 function candidates(pattern, used) {
   const len = pattern.length;
@@ -132,11 +138,13 @@ function candidates(pattern, used) {
     if (!pool || list.length < pool.length) pool = list;
   }
   pool ??= byLength.get(len);
-  return pool.filter((w) => {
-    if (used.has(w) || (usage.get(w) ?? 0) >= MAX_USES[len]) return false;
+  const ok = pool.filter((w) => {
+    if (used.has(w) || (usage.get(w) ?? 0) >= MAX_USES) return false;
     for (let i = 0; i < len; i += 1) if (pattern[i] !== '.' && pattern[i] !== w[i]) return false;
     return true;
   });
+  // Fresh words first: shuffle, then stable-sort by how often each has been used.
+  return shuffle(ok).sort((a, b) => (usage.get(a) ?? 0) - (usage.get(b) ?? 0));
 }
 
 function fill(patternRows, budgetMs = 400) {
@@ -163,11 +171,15 @@ function fill(patternRows, budgetMs = 400) {
     }
     if (!best) {
       // Completed slots formed by crossings must also be real, unique words.
+      // Crossings can complete a slot without it going through candidates(), so the reuse cap
+      // has to be enforced here too.
       const words = slots.map(read);
-      return words.every((w) => bank.has(w)) && new Set(words).size === words.length;
+      return (
+        words.every((w) => bank.has(w) && (usage.get(w) ?? 0) < MAX_USES) && new Set(words).size === words.length
+      );
     }
     const before = best.cells.map(([r, c]) => grid[r][c]);
-    for (const w of shuffle(bestCands.slice(0, 400))) {
+    for (const w of bestCands.slice(0, 400)) {
       best.cells.forEach(([r, c], i) => (grid[r][c] = w[i]));
       used.add(w);
       if (solve()) return true;
@@ -191,42 +203,83 @@ function toPuzzle(id, rows, clueFor) {
   };
 }
 
+const wordsOf = (rows) => {
+  const { across, down } = slotsFor(rows);
+  return [...across, ...down].map((s) => s.cells.map(([r, c]) => rows[r][c]).join(''));
+};
+
 const puzzles = [];
-const handmade = JSON.parse(readFileSync(join(here, 'handmade.json'), 'utf8'));
-for (const p of handmade) {
-  puzzles.push({ id: puzzles.length + 1, rows: p.rows, across: p.across, down: p.down, title: p.title });
+let existing = [];
+let previousVersion = 1;
+try {
+  const { count, chunkSize, version } = JSON.parse(readFileSync(join(outDir, 'index.json'), 'utf8'));
+  previousVersion = version ?? 1;
+  for (let i = 0; i * chunkSize < count; i += 1) existing = existing.concat(JSON.parse(readFileSync(join(outDir, `${i}.json`), 'utf8')));
+} catch {
+  existing = JSON.parse(readFileSync(join(here, 'handmade.json'), 'utf8')).map((p, i) => ({ id: i + 1, ...p }));
 }
+for (const p of existing.slice(0, FREEZE)) {
+  puzzles.push(p);
+  const words = wordsOf(p.rows);
+  const clues = [...p.across, ...p.down];
+  words.forEach((w, i) => {
+    usage.set(w, (usage.get(w) ?? 0) + 1);
+    clueUsage.set(`${w}|${clues[i]}`, (clueUsage.get(`${w}|${clues[i]}`) ?? 0) + 1);
+  });
+}
+console.log(`  kept ${puzzles.length} existing puzzles unchanged`);
+
+// Least-used clue for this word, so a repeated answer gets a different clue each time.
+const pickClue = (w) => {
+  const clues = shuffle([...bank.get(w)]);
+  clues.sort((a, b) => (clueUsage.get(`${w}|${a}`) ?? 0) - (clueUsage.get(`${w}|${b}`) ?? 0));
+  clueUsage.set(`${w}|${clues[0]}`, (clueUsage.get(`${w}|${clues[0]}`) ?? 0) + 1);
+  return clues[0];
+};
 
 const patterns = enumeratePatterns();
+// Three-letter slots drain the small pool of 3-letter words fastest, so favor layouts with fewer.
+const weights = patterns.map((rows) => 1 / (1 + wordsOf(rows.map((r) => r.replace(/\./g, 'A'))).filter((w) => w.length === 3).length));
+const totalWeight = weights.reduce((a, b) => a + b, 0);
+const pickPattern = () => {
+  let x = rand() * totalWeight;
+  for (let i = 0; i < patterns.length; i += 1) if ((x -= weights[i]) <= 0) return patterns[i];
+  return patterns[patterns.length - 1];
+};
+
 const fingerprints = new Set(puzzles.map((p) => p.rows.join('')));
 let attempts = 0;
-while (puzzles.length < COUNT && attempts < COUNT * 60) {
+let misses = 0;
+while (puzzles.length < COUNT && attempts < COUNT * 200) {
   attempts += 1;
-  // Favor layouts with a few blocks: open grids rarely fill from a curated list.
-  const pattern = patterns[Math.floor(rand() * patterns.length)];
-  const rows = fill(pattern);
-  if (!rows || fingerprints.has(rows.join(''))) continue;
-  fingerprints.add(rows.join(''));
-  const { across, down } = slotsFor(rows);
-  for (const s of [...across, ...down]) {
-    const w = s.cells.map(([r, c]) => rows[r][c]).join('');
-    usage.set(w, (usage.get(w) ?? 0) + 1);
+  const rows = fill(pickPattern());
+  if (!rows || fingerprints.has(rows.join(''))) {
+    // Late in the run the unused words stop fitting together; loosen the cap a notch rather than stall.
+    if ((misses += 1) >= 300) {
+      MAX_USES += 1;
+      misses = 0;
+      console.log(`  raising maxUses to ${MAX_USES} at puzzle ${puzzles.length + 1}`);
+    }
+    continue;
   }
-  puzzles.push(
-    toPuzzle(puzzles.length + 1, rows, (w) => {
-      const clues = bank.get(w);
-      return clues[Math.floor(rand() * clues.length)];
-    }),
-  );
+  misses = 0;
+  fingerprints.add(rows.join(''));
+  for (const w of wordsOf(rows)) usage.set(w, (usage.get(w) ?? 0) + 1);
+  puzzles.push(toPuzzle(puzzles.length + 1, rows, pickClue));
   if (puzzles.length % 50 === 0) console.log(`  ${puzzles.length} puzzles (${attempts} attempts)`);
 }
+if (puzzles.length < COUNT) console.log(`  stopped at ${puzzles.length}: the bank can't fill more under maxUses=${MAX_USES}`);
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 for (let i = 0; i < puzzles.length; i += CHUNK) {
   writeFileSync(join(outDir, `${i / CHUNK}.json`), JSON.stringify(puzzles.slice(i, i + CHUNK)));
 }
-writeFileSync(join(outDir, 'index.json'), JSON.stringify({ count: puzzles.length, chunkSize: CHUNK }));
+// The app drops saved progress for rebuilt puzzles (id > keptThrough) when the version changes.
+writeFileSync(
+  join(outDir, 'index.json'),
+  JSON.stringify({ count: puzzles.length, chunkSize: CHUNK, version: previousVersion + 1, keptThrough: FREEZE }),
+);
 
 const distinct = new Set(puzzles.flatMap((p) => slotsFor(p.rows).across.concat(slotsFor(p.rows).down).map((s) => s.cells.map(([r, c]) => p.rows[r][c]).join(''))));
 console.log(`Wrote ${puzzles.length} puzzles from ${patterns.length} layouts, ${bank.size} bank words, ${distinct.size} distinct answers used.`);

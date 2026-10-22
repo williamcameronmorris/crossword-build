@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Game } from './Game';
 import { type Puzzle, dailyPuzzleId, loadBankIndex, loadPuzzle, prefetchPuzzle } from './puzzles';
+import { syncBankVersion } from './storage';
 
 type State =
   | { status: 'loading' }
@@ -19,7 +20,8 @@ export default function App() {
 
   const open = useCallback(async (id: number | null) => {
     try {
-      const { count } = await loadBankIndex();
+      const { count, version, keptThrough } = await loadBankIndex();
+      if (version) syncBankVersion(version, keptThrough ?? 0);
       const dailyId = dailyPuzzleId(count);
       const target = id && id <= count ? id : dailyId;
       const puzzle = await loadPuzzle(target);

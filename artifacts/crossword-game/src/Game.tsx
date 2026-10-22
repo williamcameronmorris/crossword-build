@@ -65,7 +65,7 @@ const puzzleLabel = (id: number) => `No. ${String(id).padStart(3, '0')}`;
 
 /** One solve of one puzzle. Rendered with key={puzzle.id}, so all state starts fresh per puzzle. */
 export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
-  const saved = useMemo(() => loadProgress(puzzle.id), [puzzle.id]);
+  const saved = useMemo(() => loadProgress(puzzle.id, puzzle.rows.join('')), [puzzle]);
   const [letters, setLetters] = useState<Record<string, string>>(() => saved?.letters ?? {});
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set(saved?.revealed ?? []));
   const [wrong, setWrong] = useState<Set<string>>(new Set());
@@ -128,8 +128,8 @@ export function Game({ puzzle, count, dailyId, onOpenPuzzle }: Props) {
   // --- persistence -------------------------------------------------------
   useEffect(() => {
     if (!started && !completed && Object.keys(letters).length === 0) return;
-    saveProgress(puzzle.id, { letters, revealed: [...revealed], seconds, completed, hints, hinted: [...hinted] });
-  }, [puzzle.id, letters, revealed, seconds, completed, hints, hinted, started]);
+    saveProgress(puzzle.id, { letters, revealed: [...revealed], seconds, completed, hints, hinted: [...hinted] }, puzzle.rows.join(''));
+  }, [puzzle, letters, revealed, seconds, completed, hints, hinted, started]);
 
   // --- navigation -------------------------------------------------------
   const selectEntry = useCallback((entry: Entry, cell?: Cell) => {
