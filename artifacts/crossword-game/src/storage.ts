@@ -32,11 +32,34 @@ export type SavedProgress = {
 const progressKey = (id: number) => `clue_co_save_${id}`;
 const bestKey = (id: number) => `clue_co_best_${id}`;
 
-export function loadProgress(id: number): SavedProgress | null {
+/**
+ * When the puzzle bank is rebuilt, saved letters for rebuilt puzzles would land on a different
+ * grid. Drop those saves once per bank version. Best times are kept: they're real solves.
+ */
+export function syncBankVersion(version: number, keptThrough: number) {
+  const current = Number.parseInt(read('clue_co_bank_version') ?? '1', 10) || 1;
+  if (current >= version) return;
+  try {
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      const match = key?.match(/^clue_co_save_(\d+)$/);
+      if (match && Number(match[1]) > keptThrough) stale.push(key!);
+    }
+    stale.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* storage unavailable */
+  }
+  write('clue_co_bank_version', String(version));
+}
+
+export function loadProgress(id: number, grid?: string): SavedProgress | null {
   const raw = read(progressKey(id));
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
+    // A save made for a different grid is useless (and would mark the wrong squares).
+    if (grid && typeof data.grid === 'string' && data.grid !== grid) return null;
     return {
       letters: data.letters && typeof data.letters === 'object' ? data.letters : {},
       revealed: Array.isArray(data.revealed) ? data.revealed : [],
@@ -50,8 +73,8 @@ export function loadProgress(id: number): SavedProgress | null {
   }
 }
 
-export function saveProgress(id: number, progress: SavedProgress) {
-  write(progressKey(id), JSON.stringify(progress));
+export function saveProgress(id: number, progress: SavedProgress, grid?: string) {
+  write(progressKey(id), JSON.stringify({ ...progress, grid }));
 }
 
 export function clearProgress(id: number) {

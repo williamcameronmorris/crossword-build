@@ -81,7 +81,8 @@ function buildPuzzle(raw: RawPuzzle): Puzzle {
 // The bank is split into chunks of ~100 puzzles so a visit downloads ~15 KB, not the whole archive.
 
 const base = `${import.meta.env.BASE_URL}puzzles/`;
-type BankIndex = { count: number; chunkSize: number };
+/** `version` bumps when puzzles after `keptThrough` are rebuilt, so stale saves can be dropped. */
+type BankIndex = { count: number; chunkSize: number; version?: number; keptThrough?: number };
 
 let indexPromise: Promise<BankIndex> | null = null;
 const chunkCache = new Map<number, Promise<RawPuzzle[]>>();

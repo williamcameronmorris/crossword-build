@@ -8,7 +8,7 @@
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "generate": "node tools/generate-puzzles.mjs 500 1 && node tools/add-hints.mjs",
+    "generate": "node tools/generate-puzzles.mjs 500 7 30 2 && node tools/dedupe-clues.mjs && node tools/add-hints.mjs",
     "hints": "node tools/add-hints.mjs"
   },
   "devDependencies": {
